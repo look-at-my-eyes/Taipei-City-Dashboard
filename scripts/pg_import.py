@@ -12,8 +12,54 @@ import sys
 import os
 import asyncpg
 from dotenv import load_dotenv
+from datetime import datetime
+from typing import Any
 
 load_dotenv()
+
+TYPE_PRIORITY = {
+    "INTEGER": 1,
+    "NUMERIC": 2,
+    "DOUBLE PRECISION": 2,
+    "TIMESTAMP WITH TIME ZONE": 3,
+    "TIMESTAMP WITHOUT TIME ZONE": 4,
+    "TEXT": 5,
+}
+
+PRIORITY_TO_TYPE = {
+    1: "INTEGER",
+    2: "NUMERIC",
+    3: "TIMESTAMP WITH TIME ZONE",
+    4: "TIMESTAMP WITHOUT TIME ZONE",
+    5: "TEXT",
+}
+
+type_to_python_type = {
+    "INTEGER": int,
+    "NUMERIC": float,
+    "TIMESTAMP WITH TIME ZONE": datetime,
+    "TIMESTAMP WITHOUT TIME ZONE": datetime,
+    "TEXT": str,
+}
+
+
+# Helper function to infer data type
+def infer_pg_type(value_str: str) -> str:
+    try:
+        int(value_str)
+        return "INTEGER"
+    except ValueError:
+        try:
+            float(value_str)
+            return "NUMERIC"
+        except ValueError:
+            try:
+                iso_datetime = datetime.fromisoformat(value_str)
+                if iso_datetime.tzinfo:
+                    return "TIMESTAMP WITH TIME ZONE"
+                return "TIMESTAMP WITHOUT TIME ZONE"
+            except ValueError:
+                return "TEXT"
 
 
 async def import_csv_to_pg(
@@ -52,35 +98,126 @@ async def import_csv_to_pg(
 
             print(f"CSV Headers: {header}")
 
-            columns_definition = ", ".join([f'"{col}" TEXT' for col in header])
+            f.seek(0)
+            reader_for_type_inference = csv.reader(f)
+            next(reader_for_type_inference)  # Skip header
+
+            sample_rows = []
+            for i, row in enumerate(reader_for_type_inference):
+                if i >= 100:  # Sample up to 100 rows
+                    break
+                sample_rows.append(row)
+
+            # Determine column types based on sample data
+            inferred_column_types = ["TEXT"] * len(header)  # Default to TEXT
+
+            if sample_rows:
+                for col_idx in range(len(header)):
+                    current_col_max_priority = -1  # Lower than any actual priority
+                    for sample_row in sample_rows:
+                        if (
+                            col_idx < len(sample_row)
+                            and sample_row[col_idx] is not None
+                        ):
+                            value_str = sample_row[col_idx].strip()
+                            if (
+                                value_str
+                            ):  # Ensure it's not an empty string after stripping
+                                potential_type = infer_pg_type(value_str)
+                                priority = TYPE_PRIORITY[potential_type]
+                                if priority > current_col_max_priority:
+                                    current_col_max_priority = priority
+                                # Optimization: if TEXT is reached, it's the most general
+                                if current_col_max_priority == TYPE_PRIORITY["TEXT"]:
+                                    break
+
+                    if (
+                        current_col_max_priority != -1
+                    ):  # If any type was identified for the column
+                        inferred_column_types[col_idx] = PRIORITY_TO_TYPE[
+                            current_col_max_priority
+                        ]
+            # If sample_rows is empty or a column had no identifiable non-empty values, it remains TEXT.
+
+            print(f"Inferred column types: {list(zip(header, inferred_column_types))}")
+
+            columns_definition_parts = ['"id" SERIAL PRIMARY KEY']
+            columns_definition_parts.extend(
+                [
+                    f'"{col_name}" {col_type}'
+                    for col_name, col_type in zip(header, inferred_column_types)
+                ]
+            )
+            columns_definition = ", ".join(columns_definition_parts)
             create_table_query = f"""
             CREATE TABLE IF NOT EXISTS "{schema_name}"."{table_name}" (
                 {columns_definition}
             );
             """
+
             print(f"Executing: {create_table_query}")
             await conn.execute(create_table_query)
             print(f"Table '{schema_name}.{table_name}' ensured to exist.")
 
             f.seek(0)
-            next(reader)
-            records_to_insert = list(reader)
+            reader = csv.reader(f)  # Re-initialize reader for data insertion
+            next(reader)  # Skip header again
 
-            if not records_to_insert:
+            raw_records_from_csv = list(reader)
+            typed_records_to_insert = []
+
+            if not raw_records_from_csv:
                 print("No data rows found in CSV after header.")
                 return
 
-            qualified_table_name = f'"{schema_name}"."{table_name}"'
-            print(f"Qualified table name: {qualified_table_name}")
+            for row_num, record_values in enumerate(raw_records_from_csv):
+                if len(record_values) != len(header):
+                    print(
+                        f"Warning: Row {row_num + 1} has {len(record_values)} columns, expected {len(header)}. Skipping. Data: {record_values}",
+                        file=sys.stderr,
+                    )
+                    continue
+
+                typed_row: list[Any | None] = []
+                for i, value_str in enumerate(record_values):
+                    target_pg_type = inferred_column_types[i]
+                    python_converter = type_to_python_type[target_pg_type]
+                    stripped_value = value_str.strip()
+
+                    if not stripped_value:
+                        typed_row.append(None)  # Convert empty strings to None for DB
+                    else:
+                        try:
+                            if python_converter == datetime:
+                                # Ensure consistency with infer_pg_type's format
+                                typed_row.append(datetime.fromisoformat(stripped_value))
+                            else:
+                                typed_row.append(python_converter(stripped_value))
+                        except ValueError:
+                            print(
+                                f"Warning: Row {row_num + 1}, Column '{header[i]}': Could not convert '{stripped_value}' to {target_pg_type}. Inserting NULL.",
+                                file=sys.stderr,
+                            )
+                            typed_row.append(
+                                None
+                            )  # Fallback to None if conversion fails
+                typed_records_to_insert.append(tuple(typed_row))
+
+            if not typed_records_to_insert:
+                print(
+                    "No processable data rows found in CSV after header and type conversion."
+                )
+                return
 
             await conn.copy_records_to_table(
                 table_name=table_name,
-                records=records_to_insert,
+                records=typed_records_to_insert,
                 columns=header,
+                schema_name=schema_name,  # Added schema_name for robustness
                 timeout=60,
             )
             print(
-                f"{len(records_to_insert)} records copied to '{schema_name}.{table_name}'."
+                f"{len(typed_records_to_insert)} records copied to '{schema_name}.{table_name}'."
             )
 
     except FileNotFoundError:
