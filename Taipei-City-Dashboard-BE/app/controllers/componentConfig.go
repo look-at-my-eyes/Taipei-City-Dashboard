@@ -210,7 +210,7 @@ func UpdateComponentChartConfig(c *gin.Context) {
 	}
 
 	// 1.1 Get the city name from the URL
-	city := c.Param("city")
+	city := c.Query("city")
 	if !(city == "taipei" || city == "metrotaipei" || city == "") {
 		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "message": "Invalid City Name"})
 		return
