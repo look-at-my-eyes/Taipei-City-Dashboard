@@ -32,7 +32,7 @@ const newComponent = ref({
 	},
 	chart_data: null,
 	query_data: "",
-	map_config: [null],
+	map_config: [],
 	map_filter: null,
 	history_config: {
 		color: [],
@@ -64,13 +64,6 @@ const tempInputStorage = ref({
 const uploadedFiles = ref([]);
 const generatedPrompt = ref("");
 
-watch(
-	() => newComponent.value.chart_config.types,
-	() => {
-		console.log(newComponent.value.chart_config.types);
-	}
-);
-
 watch(currentSettings, async (val) => {
 	if (val === "prompt") {
 		generatedPrompt.value = await generateSQLPrompt(uploadedFiles.value, newComponent.value.query_type);
@@ -79,8 +72,6 @@ watch(currentSettings, async (val) => {
 
 async function handleConfirm() {
 	try {
-		generateSQLPrompt(uploadedFiles.value, newComponent.value.query_type);
-		console.log(uploadedFiles.value);
 		const formData = new FormData();
 		formData.append('component', JSON.stringify(newComponent.value));
 		if (uploadedFiles.value && uploadedFiles.value.length > 0) {
@@ -88,6 +79,7 @@ async function handleConfirm() {
 				formData.append('files', file);
 			});
 		}
+		console.log(formData);
 		await http.post(`/component/`, formData, {
 			headers: {
 				'Content-Type': 'multipart/form-data',
@@ -103,7 +95,6 @@ async function handleConfirm() {
 
 function handleUpload(files) {
 	uploadedFiles.value = files;
-	console.log('Files received from child:', files);
 }
 
 function handleClose() {
@@ -133,6 +124,23 @@ function handleClose() {
 		query_chart: "",
 	});
 }
+
+function addMapConfig() {
+	newComponent.value.map_config.push({
+		id: undefined,
+		index: "",
+		title: "",
+		type: "",
+		size: "",
+		icon: "",
+		paint: "",
+		property: "",
+	});
+}
+
+function deleteMapConfig(index) {
+	newComponent.value.map_config.splice(index, 1);
+}
 </script>
 
 <template>
@@ -161,25 +169,24 @@ function handleClose() {
 					圖表
 				</button>
 				<button
-					:class="{ active: currentSettings === 'prompt' }"
-					@click="currentSettings = 'prompt'"
-				>
-					SQL
-				</button>
-				<button
-					v-if="newComponent.history_config"
-					:class="{ active: currentSettings === 'history' }"
-					@click="currentSettings = 'history'"
-				>
-					歷史軸
-				</button>
-				<button
-					v-if="newComponent.map_config[0] !== null"
 					:class="{ active: currentSettings == 'map' }"
 					@click="currentSettings = 'map'"
 				>
 					地圖
 				</button>
+				<button
+					:class="{ active: currentSettings === 'prompt' }"
+					@click="currentSettings = 'prompt'"
+				>
+					SQL
+				</button>
+				<!-- <button
+					v-if="newComponent.history_config"
+					:class="{ active: currentSettings === 'history' }"
+					@click="currentSettings = 'history'"
+				>
+					歷史軸
+				</button> -->
 			</div>
 			<div class="createcomponent-content">
 				<div class="createcomponent-settings">
@@ -490,10 +497,6 @@ function handleClose() {
 								}
 							"
 						>
-						<div v-if="newComponent.map_config[0] !== null">
-							<label>地圖篩選</label>
-							<textarea v-model="newComponent.map_filter" />
-						</div>
 					</div>
 					<div
 						v-else-if="currentSettings === 'history'"
@@ -560,131 +563,88 @@ function handleClose() {
 						>
 					</div>
 					<div v-else-if="currentSettings === 'map'">
-						<div
-							v-for="(
-								map_config, index
-							) in newComponent.map_config"
-							:key="map_config.index"
-							class="createcomponent-settings-items"
-						>
-							<hr v-if="index > 0">
-							<label>地圖{{ index + 1 }} ID / Index</label>
-							<div class="two-block">
+						<div v-if="newComponent.map_config.length === 0" style="padding: 2rem; text-align: center;">
+							<button @click="addMapConfig" style="padding: 8px 16px; border-radius: 5px; background: var(--color-highlight); color: white; font-size: 1rem; cursor: pointer;">新增地圖</button>
+						</div>
+						<div v-else>
+							<div
+								v-for="(map_config, index) in newComponent.map_config"
+								:key="index"
+								class="createcomponent-settings-items"
+							>
+								<hr v-if="index > 0">
+								<div style="display: flex; justify-content: space-between; align-items: center;">
+									<label>地圖{{ index + 1 }} Index / 名稱</label>
+									<button @click="deleteMapConfig(index)" style="color: white; border: none; border-radius: 100%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; font-size: 1rem; line-height: 1; padding-bottom: 2.5px;">
+										&times;
+									</button>
+								</div>
+								<label>地圖{{ index + 1 }} Index</label>
 								<input
-									:value="
-										newComponent.map_config[index].id
-									"
-									disabled
-								>
-								<input
-									v-model="
-										newComponent.map_config[index].index
-									"
+									v-model="newComponent.map_config[index].index"
 									:maxlength="30"
 									:minlength="1"
+									placeholder="Index"
 									required
 								>
-							</div>
-
-							<label>地圖{{ index + 1 }} 名稱* ({{
-								newComponent.map_config[index].title
-									.length
-							}})</label>
-							<input
-								v-model="
-									newComponent.map_config[index].title
-								"
-								type="text"
-								:minlength="1"
-								:maxlength="10"
-								required
-							>
-							<label>地圖{{ index + 1 }} 類型*</label>
-							<select
-								v-model="
-									newComponent.map_config[index].type
-								"
-							>
-								<option
-									v-for="(value, key) in mapTypes"
-									:key="key"
-									:value="key"
+								<label>地圖{{ index + 1 }} 名稱* ({{ newComponent.map_config[index].title.length }}/10)</label>
+								<input
+									v-model="newComponent.map_config[index].title"
+									type="text"
+									:minlength="1"
+									:maxlength="10"
+									placeholder="名稱"
+									required
 								>
-									{{ value }}
-								</option>
-							</select>
-							<label>地圖{{
-								index + 1
-							}}
-								預設變形（大小/圖示）</label>
-							<div class="two-block">
+								<label>地圖{{ index + 1 }} 類型*</label>
 								<select
-									v-model="
-										newComponent.map_config[index].size
-									"
+									v-model="newComponent.map_config[index].type"
 								>
-									<option :value="''">
-										無
-									</option>
-									<option value="small">
-										small (點圖)
-									</option>
-									<option value="big">
-										big (點圖)
-									</option>
-									<option value="wide">
-										wide (線圖)
+									<option
+										v-for="(value, key) in mapTypes"
+										:key="key"
+										:value="key"
+									>
+										{{ value }}
 									</option>
 								</select>
-								<select
-									v-model="
-										newComponent.map_config[index].icon
-									"
-								>
-									<option :value="''">
-										無
-									</option>
-									<option value="heatmap">
-										heatmap (點圖)
-									</option>
-									<option value="dash">
-										dash (線圖)
-									</option>
-									<option value="metro">
-										metro (符號圖)
-									</option>
-									<option value="metro-density">
-										metro-density (符號圖)
-									</option>
-									<option value="triangle_green">
-										triangle_green (符號圖)
-									</option>
-									<option value="triangle_white">
-										triangle_white (符號圖)
-									</option>
-									<option value="youbike">
-										youbike (符號圖)
-									</option>
-									<option value="bus">
-										bus (符號圖)
-									</option>
-									<option value="cctv">
-										cctv (符號圖)
-									</option>
-								</select>
+								<label>地圖{{ index + 1 }} 預設變形（大小/圖示）</label>
+								<div class="two-block">
+									<select
+										v-model="newComponent.map_config[index].size"
+									>
+										<option :value="''">無</option>
+										<option value="small">small (點圖)</option>
+										<option value="big">big (點圖)</option>
+										<option value="wide">wide (線圖)</option>
+									</select>
+									<select
+										v-model="newComponent.map_config[index].icon"
+									>
+										<option :value="''">無</option>
+										<option value="heatmap">heatmap (點圖)</option>
+										<option value="dash">dash (線圖)</option>
+										<option value="metro">metro (符號圖)</option>
+										<option value="metro-density">metro-density (符號圖)</option>
+										<option value="triangle_green">triangle_green (符號圖)</option>
+										<option value="triangle_white">triangle_white (符號圖)</option>
+										<option value="youbike">youbike (符號圖)</option>
+										<option value="bus">bus (符號圖)</option>
+										<option value="cctv">cctv (符號圖)</option>
+									</select>
+								</div>
+								<label>地圖{{ index + 1 }} Paint屬性</label>
+								<textarea
+									v-model="newComponent.map_config[index].paint"
+								/>
+								<label>地圖{{ index + 1 }} Popup標籤</label>
+								<textarea
+									v-model="newComponent.map_config[index].property"
+								/>
 							</div>
-							<label>地圖{{ index + 1 }} Paint屬性</label>
-							<textarea
-								v-model="
-									newComponent.map_config[index].paint
-								"
-							/>
-							<label>地圖{{ index + 1 }} Popup標籤</label>
-							<textarea
-								v-model="
-									newComponent.map_config[index].property
-								"
-							/>
+							<div style="text-align: center; margin-top: 1rem;">
+								<button @click="addMapConfig" style="padding: 2px 12px; border-radius: 5px; background: var(--color-highlight); color: white; font-size: 1rem; cursor: pointer; margin-bottom: 1rem;">新增地圖</button>
+							</div>
 						</div>
 					</div>
 					<div
@@ -707,7 +667,8 @@ function handleClose() {
 						v-if="
 							currentSettings === 'all' ||
 								currentSettings === 'chart' || 
-								currentSettings === 'prompt'
+								currentSettings === 'prompt' ||
+								currentSettings === 'map'
 						"
 						:key="`${newComponent.index}-${newComponent.chart_config.color}-${newComponent.chart_config.types}`"
 						:config="JSON.parse(JSON.stringify(newComponent))"
@@ -734,12 +695,6 @@ function handleClose() {
 								)
 							"
 						/>
-					</div>
-					<div
-						v-else-if="currentSettings === 'map'"
-						index="componentsettings"
-					>
-						預覽功能 Coming Soon
 					</div>
 				</div>
 			</div>
@@ -814,7 +769,7 @@ function handleClose() {
 		.two-block {
 			display: grid;
 			grid-template-columns: 1fr 1fr;
-			column-gap: 0.5rem;
+			column-gap: 0.4rem;
 		}
 		.three-block {
 			display: grid;
