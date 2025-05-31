@@ -86,7 +86,7 @@ func configureComponentRoutes() {
 	componentRoutes.Use(middleware.IsSysAdm())
 	{
 		componentRoutes.
-			POST("/", controllers.CreateComponent).
+			POST("/", controllers.CreateComponentWithForm).
 			PATCH("/:id", controllers.UpdateComponent).
 			DELETE("/:id", controllers.DeleteComponent)
 		componentRoutes.
