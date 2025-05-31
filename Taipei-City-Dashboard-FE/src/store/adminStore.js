@@ -43,6 +43,9 @@ export const useAdminStore = defineStore("admin", {
 		contributors: [],
 		contributorResults: 0,
 		currentContributor: null,
+		// Review Component (for /admin/review-component)
+		submittedComponents: [],
+		submittedComponentResults: 0,
 	}),
 	actions: {
 		/* Utility functions to access loading and error states in contentStore */
@@ -136,6 +139,15 @@ export const useAdminStore = defineStore("admin", {
 			});
 			this.components = response.data.data;
 			this.componentResults = response.data.results;
+			this.setLoading(false);
+		},
+		// 1.1 Get all submitted components
+		async getSubmittedComponents(params) {
+			const response = await http.get(`/component/status/submitted`, {
+				params,
+			});
+			this.submittedComponents = response.data.data;
+			this.submittedComponentResults = response.data.results;
 			this.setLoading(false);
 		},
 		// 2. Get component chart / history data and append to component config

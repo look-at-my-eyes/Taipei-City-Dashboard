@@ -12,11 +12,19 @@ import (
 
 /* ----- Models ----- */
 
+const (
+	StatusSubmitted = "submitted"
+	StatusApproved  = "approved"
+	StatusRejected  = "rejected"
+)
+
 // Component is the model for the components table.
 type Component struct {
-	ID    int64  `json:"id" gorm:"column:id;autoincrement;primaryKey"`
-	Index string `json:"index" gorm:"column:index;type:varchar;unique;not null"     `
-	Name  string `json:"name" gorm:"column:name;type:varchar;not null"`
+	ID      int64  `json:"id" gorm:"column:id;autoincrement;primaryKey"`
+	Index   string `json:"index" gorm:"column:index;type:varchar;unique;not null"     `
+	Name    string `json:"name" gorm:"column:name;type:varchar;not null"`
+	Status  string `json:"status" gorm:"column:status;type:varchar;not null;default:'approved'"`
+	OwnerID int64  `json:"owner_id" gorm:"column:owner_id;type:bigint;not null;default:0"`
 }
 
 // QueryCharts is the model for the query_charts table.
@@ -68,6 +76,7 @@ type CityComponent struct {
 	QueryChart     string          `json:"-"`
 	QueryHistory   string          `json:"-"`
 	City           string          `json:"city"`
+	Status         string          `json:"status"`
 }
 
 // ComponentMap is the model for the component_maps table.
@@ -96,7 +105,7 @@ type ComponentChart struct {
 // createTempComponentDB joins the components, component_maps, and component_charts tables and selects the columns to return.
 func createTempComponentDB() *gorm.DB {
 	subQuery1 := DBManager.Table("components").
-		Select("components.id,components.index,components.name,row_to_json(component_charts.*) AS chart_config").
+		Select("components.id,components.index,components.name,components.status,components.owner_id,row_to_json(component_charts.*) AS chart_config").
 		Joins("JOIN component_charts ON components.index = component_charts.index")
 
 	subQuery2 := DBManager.Table("query_charts").
@@ -291,9 +300,10 @@ func CreateComponent(index string, name string, city string, historyConfig json.
 	return cityComponent, nil
 }
 
-func UpdateComponent(id int, city string, name string, historyConfig json.RawMessage, mapFilter json.RawMessage, timeFrom string, timeTo *string, updateFreq *int64, updateFreqUnit string, source string, shortDesc string, longDesc string, useCase string, links pq.StringArray, contributors pq.StringArray) (cityComponent CityComponent, err error) {
+func UpdateComponent(id int, city string, name string, historyConfig json.RawMessage, mapFilter json.RawMessage, timeFrom string, timeTo *string, updateFreq *int64, updateFreqUnit string, source string, shortDesc string, longDesc string, useCase string, links pq.StringArray, contributors pq.StringArray, status string) (cityComponent CityComponent, err error) {
 	component := Component{
 		Name: name,
+		Status: status,
 		// HistoryConfig: historyConfig,
 		// MapFilter: mapFilter,
 		// TimeFrom: timeFrom,
@@ -342,6 +352,7 @@ func UpdateComponent(id int, city string, name string, historyConfig json.RawMes
 		Links:          links,
 		Contributors:   contributors,
 		UpdatedAt:      time.Now(),
+		Status:         status,
 	}
 
 	var tmp Component
@@ -425,4 +436,162 @@ func DeleteComponent(id int, index string, mapConfigIDs pq.Int64Array) (deleteCh
 	}
 
 	return true, true, nil
+}
+
+func GetMyComponents(ownerID int64, city string, pageSize int, pageNum int, sort string, order string, filterBy string, filterMode string, filterValue string, searchByIndex string, searchByName string) (components []CityComponent, totalComponents int64, resultNum int64, err error) {
+		tempDB := createTempComponentDB()
+	
+		// Count the total amount of components
+		tempDB.Count(&totalComponents)
+		tempDB = tempDB.Where("components.owner_id = ?", ownerID)
+	
+		if city != "" {
+			tempDB = tempDB.Where("query_charts.city = ?", city)
+		}
+	
+		// Search the components
+		if searchByIndex != "" {
+			tempDB = tempDB.Where("components.index LIKE ?", "%"+searchByIndex+"%")
+		}
+		if searchByName != "" {
+			tempDB = tempDB.Where("components.name LIKE ?", "%"+searchByName+"%")
+		}
+	
+		componentsColumn := []string{"id", "index", "name"}
+		queryChartsColumn := []string{"update_freq", "source", "short_desc", "long_desc", "use_case", "links", "contributors", "query_type"}
+		allColumns := append(componentsColumn, queryChartsColumn...)
+	
+		// Filter the components
+		if filterBy != "" && filterValue != "" && slices.Contains(allColumns, filterBy) {
+			var filterByCol string
+			if slices.Contains(componentsColumn, filterBy) {
+				filterByCol = "components"
+			}
+	
+			if slices.Contains(queryChartsColumn, filterBy) {
+				filterByCol = "query_charts"
+			}
+	
+			switch filterMode {
+			case "eq": // equals
+				tempDB = tempDB.Where(filterByCol+".\"?\" = ?", gorm.Expr(filterBy), filterValue)
+			case "ne": // not equals
+				tempDB = tempDB.Where(filterByCol+".\"?\" <> ?", gorm.Expr(filterBy), filterValue)
+			case "gt": // greater than
+				tempDB = tempDB.Where(filterByCol+".\"?\" > ?", gorm.Expr(filterBy), filterValue)
+			case "lt": // less than
+				tempDB = tempDB.Where(filterByCol+".\"?\" < ?", gorm.Expr(filterBy), filterValue)
+			case "in": // value in array
+				tempDB = tempDB.Where(filterByCol+".\"?\" IN ?", gorm.Expr(filterBy), filterValue)
+			default: // Default to eq
+				tempDB = tempDB.Where(filterByCol+".\"?\" = ?", gorm.Expr(filterBy), filterValue)
+			}
+		}
+	
+		tempDB.Count(&resultNum)
+	
+		// Sort the components
+		if sort != "" && slices.Contains(allColumns, sort) {
+			if slices.Contains(componentsColumn, sort) {
+				tempDB = tempDB.Order("components." + sort + " " + order)
+			}
+	
+			if slices.Contains(queryChartsColumn, sort) {
+				tempDB = tempDB.Order("query_charts." + sort + " " + order)
+			}
+		}
+	
+		// Paginate the components
+		if pageSize > 0 {
+			tempDB = tempDB.Limit(pageSize)
+			if pageNum > 0 {
+				tempDB = tempDB.Offset((pageNum - 1) * pageSize)
+			}
+		}
+	
+		err = tempDB.Find(&components).Error
+		if err != nil {
+			return components, 0, 0, err
+		}
+	
+		return components, totalComponents, resultNum, nil
+	}
+
+func GetComponentsByStatus(status string, city string, pageSize int, pageNum int, sort string, order string, filterBy string, filterMode string, filterValue string, searchByIndex string, searchByName string) (components []CityComponent, totalComponents int64, resultNum int64, err error) {
+	tempDB := createTempComponentDB()
+
+	// Count the total amount of components
+	tempDB.Count(&totalComponents)
+	tempDB = tempDB.Where("components.status = ?", status)
+
+	if city != "" {
+		tempDB = tempDB.Where("query_charts.city = ?", city)
+	}
+
+	// Search the components
+	if searchByIndex != "" {
+		tempDB = tempDB.Where("components.index LIKE ?", "%"+searchByIndex+"%")
+	}
+	if searchByName != "" {
+		tempDB = tempDB.Where("components.name LIKE ?", "%"+searchByName+"%")
+	}
+
+	componentsColumn := []string{"id", "index", "name"}
+	queryChartsColumn := []string{"update_freq", "source", "short_desc", "long_desc", "use_case", "links", "contributors", "query_type"}
+	allColumns := append(componentsColumn, queryChartsColumn...)
+
+	// Filter the components
+	if filterBy != "" && filterValue != "" && slices.Contains(allColumns, filterBy) {
+		var filterByCol string
+		if slices.Contains(componentsColumn, filterBy) {
+			filterByCol = "components"
+		}
+
+		if slices.Contains(queryChartsColumn, filterBy) {
+			filterByCol = "query_charts"
+		}
+
+		switch filterMode {
+		case "eq": // equals
+			tempDB = tempDB.Where(filterByCol+".\"?\" = ?", gorm.Expr(filterBy), filterValue)
+		case "ne": // not equals
+			tempDB = tempDB.Where(filterByCol+".\"?\" <> ?", gorm.Expr(filterBy), filterValue)
+		case "gt": // greater than
+			tempDB = tempDB.Where(filterByCol+".\"?\" > ?", gorm.Expr(filterBy), filterValue)
+		case "lt": // less than
+			tempDB = tempDB.Where(filterByCol+".\"?\" < ?", gorm.Expr(filterBy), filterValue)
+		case "in": // value in array
+			tempDB = tempDB.Where(filterByCol+".\"?\" IN ?", gorm.Expr(filterBy), filterValue)
+		default: // Default to eq
+			tempDB = tempDB.Where(filterByCol+".\"?\" = ?", gorm.Expr(filterBy), filterValue)
+		}
+	}
+
+	tempDB.Count(&resultNum)
+
+	// Sort the components
+	if sort != "" && slices.Contains(allColumns, sort) {
+		if slices.Contains(componentsColumn, sort) {
+			tempDB = tempDB.Order("components." + sort + " " + order)
+		}
+
+		if slices.Contains(queryChartsColumn, sort) {
+			tempDB = tempDB.Order("query_charts." + sort + " " + order)
+		}
+	}
+
+	// Paginate the components
+	if pageSize > 0 {
+		tempDB = tempDB.Limit(pageSize)
+		if pageNum > 0 {
+			tempDB = tempDB.Offset((pageNum - 1) * pageSize)
+		}
+	}
+
+	err = tempDB.Find(&components).Error
+	if err != nil {
+		return components, 0, 0, err
+	}
+
+	return components, totalComponents, resultNum, nil
 }

@@ -29,9 +29,9 @@ const searchParams = ref({
 
 const pages = computed(() => {
 	// return an array of pages based on results no stored in admin store
-	if (adminStore.components) {
+	if (adminStore.submittedComponents) {
 		const pages = Math.ceil(
-			adminStore.componentResults / searchParams.value.pagesize
+			adminStore.submittedComponentResults / searchParams.value.pagesize
 		);
 		return Array.from({ length: pages }, (_, i) => i + 1);
 	}
@@ -73,17 +73,17 @@ function handleSort(sort) {
 		searchParams.value.sort = sort;
 		searchParams.value.order = "asc";
 	}
-	adminStore.getPublicComponents(searchParams.value);
+	adminStore.getSubmittedComponents(searchParams.value);
 }
 
 function handleNewQuery() {
 	searchParams.value.pagenum = 1;
-	adminStore.getPublicComponents(searchParams.value);
+	adminStore.getSubmittedComponents(searchParams.value);
 }
 
 function handleNewPage(page) {
 	searchParams.value.pagenum = page;
-	adminStore.getPublicComponents(searchParams.value);
+	adminStore.getSubmittedComponents(searchParams.value);
 }
 
 function handleOpenSettings(component) {
@@ -97,7 +97,7 @@ function handleOpenReview(component) {
 }
 
 onMounted(() => {
-	adminStore.getPublicComponents(searchParams.value);
+	adminStore.getSubmittedComponents(searchParams.value);
 });
 </script>
 
@@ -205,9 +205,9 @@ onMounted(() => {
         </tr>
       </thead>
       <!-- 2-1. Components are present -->
-      <tbody v-if="adminStore.components.length !== 0">
+      <tbody v-if="adminStore.submittedComponents.length !== 0">
         <tr
-          v-for="component in adminStore.components"
+          v-for="component in adminStore.submittedComponents"
           :key="`${component.index}-${component.city}`"
         >
           <td class="admineditcomponent-table-settings">
@@ -302,7 +302,7 @@ onMounted(() => {
     </table>
     <!-- 3. Records per page and pagination control -->
     <div
-      v-if="adminStore.components.length !== 0"
+      v-if="adminStore.submittedComponents.length !== 0"
       class="admineditcomponent-control"
     >
       <label for="pagesize">每頁顯示</label>
