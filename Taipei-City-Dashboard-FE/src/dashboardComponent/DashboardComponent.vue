@@ -118,7 +118,6 @@ const toggleOn = computed({
 const authStore = useAuthStore();
 const mousePosition = ref({ x: null, y: null });
 const showTagTooltip = ref(false);
-console.log(authStore.user, props.config);
 
 // Parses time data into display format
 const dataTime = computed(() => {

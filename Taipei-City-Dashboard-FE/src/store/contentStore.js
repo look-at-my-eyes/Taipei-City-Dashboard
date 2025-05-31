@@ -698,8 +698,6 @@ export const useContentStore = defineStore("content", {
 			const authStore = useAuthStore();
 
 			this.favorites.components.push(component_id);
-			console.log(this.favorites.components);
-			console.log(this.favorites.index);
 
 			await http.patch(`/dashboard/${this.favorites.index}`, {
 				components: this.favorites.components,
