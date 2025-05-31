@@ -62,6 +62,7 @@ const tempInputStorage = ref({
 });
 
 const uploadedFiles = ref([]);
+const generatedPrompt = ref("");
 
 watch(
 	() => newComponent.value.chart_config.types,
@@ -69,6 +70,12 @@ watch(
 		console.log(newComponent.value.chart_config.types);
 	}
 );
+
+watch(currentSettings, async (val) => {
+	if (val === "prompt") {
+		generatedPrompt.value = await generateSQLPrompt(uploadedFiles.value, newComponent.value.query_type);
+	}
+});
 
 async function handleConfirm() {
 	try {
@@ -104,22 +111,13 @@ function handleClose() {
 	dialogStore.hideAllDialogs();
 	// 重置 newComponent
 	Object.assign(newComponent.value, {
-		id: undefined,
 		index: "",
 		name: "",
 		chart_config: {
 			color: [],
 			types: [],
 			unit: "",
-			categories: null,
 		},
-		map_config: [null],
-		map_filter: null,
-		history_config: {
-			color: [],
-			range: [],
-		},
-		history_data: null,
 		query_type: "",
 		source: "",
 		time_from: "",
@@ -132,6 +130,7 @@ function handleClose() {
 		links: [],
 		contributors: [],
 		city: "taipei",
+		query_chart: "",
 	});
 }
 </script>
@@ -162,6 +161,12 @@ function handleClose() {
 					圖表
 				</button>
 				<button
+					:class="{ active: currentSettings === 'prompt' }"
+					@click="currentSettings = 'prompt'"
+				>
+					SQL
+				</button>
+				<button
 					v-if="newComponent.history_config"
 					:class="{ active: currentSettings === 'history' }"
 					@click="currentSettings = 'history'"
@@ -170,7 +175,7 @@ function handleClose() {
 				</button>
 				<button
 					v-if="newComponent.map_config[0] !== null"
-					:class="{ active: currentSettings === 'map' }"
+					:class="{ active: currentSettings == 'map' }"
 					@click="currentSettings = 'map'"
 				>
 					地圖
@@ -690,17 +695,34 @@ function handleClose() {
 							/>
 						</div>
 					</div>
+					<div
+						v-else-if="currentSettings === 'prompt'"
+						class="createcomponent-settings-items"
+					>
+						<label>SQL 查詢語句</label>
+						<textarea
+							v-model="newComponent.query_chart"
+							placeholder="請輸入 SQL 查詢語句..."
+							style="min-height: 120px; font-family: monospace;"
+						/>
+						<p style="color: #888; font-size: 13px; margin-top: 4px;">
+							請輸入對應資料來源的 SQL 查詢語句，將用於組件資料查詢。
+						</p>
+					</div>
 				</div>
 				<div class="createcomponent-preview">
 					<CreateComponentInfo
 						v-if="
 							currentSettings === 'all' ||
-								currentSettings === 'chart'
+								currentSettings === 'chart' || 
+								currentSettings === 'prompt'
 						"
 						:key="`${newComponent.index}-${newComponent.chart_config.color}-${newComponent.chart_config.types}`"
 						:config="JSON.parse(JSON.stringify(newComponent))"
 						:active-city="newComponent.city"
 						:city-tag="contentStore.cityManager.getTagList(newComponent.city)"
+						:current-settings="currentSettings"
+						:generated-prompt="generatedPrompt"
 						mode="large"
 						@upload="handleUpload"
 					/>

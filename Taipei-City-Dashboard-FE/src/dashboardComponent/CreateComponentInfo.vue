@@ -34,6 +34,8 @@ const props = defineProps({
 	footer: { type: Boolean, default: true },
 	activeCity: { type: String, default: '' },
 	toggleOn: { type: Boolean, default: false },
+	currentSettings: { type: String, default: "all" },
+	generatedPrompt: { type: String, default: "" },
 });
 
 const emits = defineEmits([
@@ -142,181 +144,189 @@ function handleUpload(event) {
     ]"
     :style="style"
   >
-    <!-- Header -->
-    <div class="dashboardcomponent-header">
-      <!-- Upper Left Corner -->
-      <div>
-        <h3>
-          {{ config.name }}
-          <ComponentTag
-            v-if="!mode.includes('map')"
-            icon=""
-            :text="updateFreq"
-            mode="small"
-          />
-          <div
-            v-else
-            @mouseenter="changeShowTagTooltipState(true)"
-            @mousemove="updateMouseLocation"
-            @mouseleave="changeShowTagTooltipState(false)"
-          >
-            <span v-if="config.map_filter && config.map_config">tune</span>
-            <span v-if="config.map_config && config.map_config[0]">map</span>
-            <span v-if="config.history_config?.range">insights</span>
-          </div>
-        </h3>
-        <p v-if="mode === 'preview'">
-          {{ props.config.short_desc }}
-        </p>
-        <div v-if="!mode.includes('map') || toggleOn">
-          <h4 v-if="dataTime === '維護修復中'">
-            {{ `${config.source} | ` }}<span>warning</span>
-            <h4>{{ `${dataTime}` }}</h4>
-            <span>warning</span>
-          </h4>
-          <h4 v-else>
-            {{ `${config.source} | ${dataTime}` }}
-          </h4>
-          <div
-            v-if="mode !== 'preview'"
-            class="city-tag-container"
-          >
+    <div v-if="currentSettings === 'prompt'">
+      <div v-if="generatedPrompt">
+        <label style="font-weight: bold;">建議 SQL Prompt</label>
+        <textarea :value="generatedPrompt" readonly style="height: 1000px; max-height: 350px; font-family: monospace; background: #111; color: #fff; margin-top: 4px; overflow-y: auto;"></textarea>
+      </div>
+    </div>
+    <div v-else>
+      <!-- Header -->
+      <div class="dashboardcomponent-header">
+        <!-- Upper Left Corner -->
+        <div>
+          <h3>
+            {{ config.name }}
             <ComponentTag
-              v-for=" city in props.cityTag"
-              :key="city"
-              :icon="''"
-              :text="city.name"
-              :mode="'small'"
-              :class="`city-tag-item ${city.value}`"
+              v-if="!mode.includes('map')"
+              icon=""
+              :text="updateFreq"
+              mode="small"
             />
+            <div
+              v-else
+              @mouseenter="changeShowTagTooltipState(true)"
+              @mousemove="updateMouseLocation"
+              @mouseleave="changeShowTagTooltipState(false)"
+            >
+              <span v-if="config.map_filter && config.map_config">tune</span>
+              <span v-if="config.map_config && config.map_config[0]">map</span>
+              <span v-if="config.history_config?.range">insights</span>
+            </div>
+          </h3>
+          <p v-if="mode === 'preview'">
+            {{ props.config.short_desc }}
+          </p>
+          <div v-if="!mode.includes('map') || toggleOn">
+            <h4 v-if="dataTime === '維護修復中'">
+              {{ `${config.source} | ` }}<span>warning</span>
+              <h4>{{ `${dataTime}` }}</h4>
+              <span>warning</span>
+            </h4>
+            <h4 v-else>
+              {{ `${config.source} | ${dataTime}` }}
+            </h4>
+            <div
+              v-if="mode !== 'preview'"
+              class="city-tag-container"
+            >
+              <ComponentTag
+                v-for=" city in props.cityTag"
+                :key="city"
+                :icon="''"
+                :text="city.name"
+                :mode="'small'"
+                :class="`city-tag-item ${city.value}`"
+              />
+            </div>
           </div>
         </div>
-      </div>
-      <!-- Upper Right Corner -->
-      <div
-        v-if="['default', 'half', 'preview'].includes(mode)"
-        class="dashboardcomponent-header-button"
-      >
-        <button
-          v-if="addBtn"
-          @click="$emit('add', config.id, config.name)"
+        <!-- Upper Right Corner -->
+        <div
+          v-if="['default', 'half', 'preview'].includes(mode)"
+          class="dashboardcomponent-header-button"
         >
-          <span>add_circle</span>
-        </button>
-        <button
-          v-if="favoriteBtn"
-          :class="{
-            isfavorite: isFavorite,
-          }"
-          @click="$emit('favorite', config.id)"
-        >
-          <span>favorite</span>
-        </button>
-        <button
-          v-if="deleteBtn"
-          class="isDelete"
-          @click="$emit('delete', config.id)"
-        >
-          <span>delete</span>
-        </button>
-      </div>
-      <div
-        v-else-if="mode.includes('map')"
-        class="dashboardcomponent-header-toggle"
-      >
-        <label class="toggleswitch">
-          <input
-            v-model="toggleOn"
-            type="checkbox"
-            :disabled="toggleDisable"
+          <button
+            v-if="addBtn"
+            @click="$emit('add', config.id, config.name)"
           >
-          <span class="toggleswitch-slider" />
-        </label>
+            <span>add_circle</span>
+          </button>
+          <button
+            v-if="favoriteBtn"
+            :class="{
+              isfavorite: isFavorite,
+            }"
+            @click="$emit('favorite', config.id)"
+          >
+            <span>favorite</span>
+          </button>
+          <button
+            v-if="deleteBtn"
+            class="isDelete"
+            @click="$emit('delete', config.id)"
+          >
+            <span>delete</span>
+          </button>
+        </div>
+        <div
+          v-else-if="mode.includes('map')"
+          class="dashboardcomponent-header-toggle"
+        >
+          <label class="toggleswitch">
+            <input
+              v-model="toggleOn"
+              type="checkbox"
+              :disabled="toggleDisable"
+            >
+            <span class="toggleswitch-slider" />
+          </label>
+        </div>
       </div>
-    </div>
-    <!-- Chart Type Buttons -->
-	<p>Chart Type: </p>
-    <div v-if="(!mode.includes('map') || toggleOn) && mode !== 'preview' && config.chart_config.types.length >= 1" class="dashboardcomponent-control-group">
-      <button
-        v-for="item in config.chart_config.types"
-        :key="`${config.index}-${item}-button`"
-        :class="{
-          'dashboardcomponent-control-group-button': true,
-          'dashboardcomponent-control-group-active': true,
-        }"
-        @click="changeActiveChart(item)"
-      >
-        {{ chartTypes[item] }}
-      </button>
-    </div>
-	
-	<!-- upload components -->
-	<div class="dashboardcomponent-upload-container">
-	<div class="dashboardcomponent-upload-square">
-	  <label>
-		<input
-		  type="file"
-		  multiple
-		  accept=".csv"
-		  @change="handleUpload"
-		  style="display: none;"
-		/>
-		<span class="material-icons upload-icon">upload_files</span>
-		<span class="upload-text">(accept .csv)</span>
-	  </label>
-	</div>
+      <!-- Chart Type Buttons -->
+      <p>Chart Type: </p>
+      <div v-if="(!mode.includes('map') || toggleOn) && mode !== 'preview' && config.chart_config.types.length >= 1" class="dashboardcomponent-control-group">
+        <button
+          v-for="item in config.chart_config.types"
+          :key="`${config.index}-${item}-button`"
+          :class="{
+            'dashboardcomponent-control-group-button': true,
+            'dashboardcomponent-control-group-active': true,
+          }"
+          @click="changeActiveChart(item)"
+        >
+          {{ chartTypes[item] }}
+        </button>
+      </div>
+      
+      <!-- upload components -->
+      <div class="dashboardcomponent-upload-container">
+        <div class="dashboardcomponent-upload-square">
+          <label>
+            <input
+              type="file"
+              multiple
+              accept=".csv"
+              @change="handleUpload"
+              style="display: none;"
+            />
+            <span class="material-icons upload-icon">upload_files</span>
+            <span class="upload-text">(accept .csv)</span>
+          </label>
+        </div>
 
-	<!-- 顯示已上傳檔案名稱 -->
-	<ul v-if="uploadedFiles.length" class="uploaded-file-list">
-	  <li v-for="file in uploadedFiles" :key="file.name" class="uploaded-file-item">
-			<span style="margin-left:4px;">- {{ file.name }}</span>
-		  </li>
-		</ul>
-	</div>
+        <!-- 顯示已上傳檔案名稱 -->
+        <ul v-if="uploadedFiles.length" class="uploaded-file-list">
+          <li v-for="file in uploadedFiles" :key="file.name" class="uploaded-file-item">
+            <span style="margin-left:4px;">- {{ file.name }}</span>
+          </li>
+        </ul>
+      </div>
 
-    <!-- Footer -->
-    <div
-      v-if="footer && (!mode.includes('map') || toggleOn)"
-      class="dashboardcomponent-footer"
-    >
+      <!-- Footer -->
       <div
-        v-if="!mode.includes('map')"
-        @mouseenter="changeShowTagTooltipState(true)"
-        @mousemove="updateMouseLocation"
-        @mouseleave="changeShowTagTooltipState(false)"
+        v-if="footer && (!mode.includes('map') || toggleOn)"
+        class="dashboardcomponent-footer"
       >
-        <ComponentTag
-          v-if="config.map_filter && config.map_config?.length > 0"
-          :icon="mode === 'preview' ? '' : 'tune'"
-          text="篩選地圖"
-          class="hide-if-mobile"
-        />
-        <ComponentTag
-          v-if="config.map_config && config.map_config[0] !== null && config.map_config?.length > 0"
-          :icon="mode === 'preview' ? '' : 'map'"
-          text="空間資料"
-          class="hide-if-mobile"
-        />
-        <ComponentTag
-          v-if="config.history_config?.range"
-          :icon="mode === 'preview' ? '' : 'insights'"
-          text="歷史資料"
-          class="history-tag"
-        />
+        <div
+          v-if="!mode.includes('map')"
+          @mouseenter="changeShowTagTooltipState(true)"
+          @mousemove="updateMouseLocation"
+          @mouseleave="changeShowTagTooltipState(false)"
+        >
+          <ComponentTag
+            v-if="config.map_filter && config.map_config?.length > 0"
+            :icon="mode === 'preview' ? '' : 'tune'"
+            text="篩選地圖"
+            class="hide-if-mobile"
+          />
+          <ComponentTag
+            v-if="config.map_config && config.map_config[0] !== null && config.map_config?.length > 0"
+            :icon="mode === 'preview' ? '' : 'map'"
+            text="空間資料"
+            class="hide-if-mobile"
+          />
+          <ComponentTag
+            v-if="config.history_config?.range"
+            :icon="mode === 'preview' ? '' : 'insights'"
+            text="歷史資料"
+            class="history-tag"
+          />
+        </div>
+        <div v-else />
+        <button
+          v-if="infoBtn"
+          @click="$emit('info', config)"
+        >
+          <p>{{ infoBtnText }}</p>
+          <span>arrow_circle_right</span>
+        </button>
       </div>
-      <div v-else />
-      <button
-        v-if="infoBtn"
-        @click="$emit('info', config)"
-      >
-        <p>{{ infoBtnText }}</p>
-        <span>arrow_circle_right</span>
-      </button>
+      <div
+        v-else-if="!mode.includes('map')"
+        class="dashboardcomponent-footer"
+      />
     </div>
-    <div
-      v-else-if="!mode.includes('map')"
-      class="dashboardcomponent-footer"
-    />
   </div>
   <Teleport to="body">
     <!-- The class "chart-tooltip" could be edited in /assets/styles/chartStyles.css -->
