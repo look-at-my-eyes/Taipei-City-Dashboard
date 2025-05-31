@@ -2,13 +2,13 @@
 
 <!-- Used by admin settings forms to select items from a predetermined list -->
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, toRef } from "vue";
 import { chartTypes } from "../../../assets/configs/apexcharts/chartTypes";
 import { timeTerms } from "../../../assets/configs/AllTimes";
 
 const props = defineProps(["tags", "selected", "limit", "disable"]);
 
-const selectedTagList = ref([...props.selected]);
+const selectedTagList = toRef(props, "selected");
 
 const emit = defineEmits({
 	updatetagorder: { updatedTags: Array },
