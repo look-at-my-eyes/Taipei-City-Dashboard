@@ -89,6 +89,8 @@ async def import_csv_to_pg(
         # Read CSV header
         with open(
             csv_file_path, "r", encoding="utf-8-sig"
+            # csv_file_path, "r", encoding="big5-hkscs"
+            
         ) as f:  # utf-8-sig to handle BOM
             reader = csv.reader(f)
             header = [col_name for col_name in next(reader)]
