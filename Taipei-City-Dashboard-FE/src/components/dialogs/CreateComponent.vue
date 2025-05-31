@@ -50,7 +50,7 @@ const newComponent = ref({
 	use_case: "",
 	links: [],
 	contributors: [],
-	city: "taipei", // 預設
+	city: "taipei",
 });
 
 const currentSettings = ref("all");
@@ -152,7 +152,7 @@ function deleteMapConfig(index) {
 			<div class="createcomponent-header">
 				<h2>組件設定</h2>
 				<button @click="handleConfirm">
-					確定更改
+					確定新增
 				</button>
 			</div>
 			<div class="createcomponent-tabs">
@@ -451,15 +451,8 @@ function deleteMapConfig(index) {
 							:tags="
 								chartsPerDataType[newComponent.query_type]
 							"
-							:selected="newComponent.chart_config.types"
+							v-model:selected="newComponent.chart_config.types"
 							:limit="3"
-							@updatetagorder="
-								(updatedTags) => {
-									console.log(updatedTags);
-									newComponent.chart_config.types =
-										updatedTags;
-								}
-							"
 						/>
 						<label>圖表顏色</label>
 						<InputTags
@@ -655,21 +648,15 @@ function deleteMapConfig(index) {
 						<textarea
 							v-model="newComponent.query_chart"
 							placeholder="請輸入 SQL 查詢語句..."
-							style="min-height: 120px; font-family: monospace;"
+							style="min-height: 300px; font-family: monospace;"
 						/>
 						<p style="color: #888; font-size: 13px; margin-top: 4px;">
-							請輸入對應資料來源的 SQL 查詢語句，將用於組件資料查詢。
+							請輸入對應資料來源的 SQL Query，將用於組件資料查詢。
 						</p>
 					</div>
 				</div>
 				<div class="createcomponent-preview">
 					<CreateComponentInfo
-						v-if="
-							currentSettings === 'all' ||
-								currentSettings === 'chart' || 
-								currentSettings === 'prompt' ||
-								currentSettings === 'map'
-						"
 						:key="`${newComponent.index}-${newComponent.chart_config.color}-${newComponent.chart_config.types}`"
 						:config="JSON.parse(JSON.stringify(newComponent))"
 						:active-city="newComponent.city"
@@ -680,7 +667,7 @@ function deleteMapConfig(index) {
 						@upload="handleUpload"
 					/>
 					<div
-						v-else-if="currentSettings === 'history'"
+						v-show="currentSettings === 'history'"
 						:style="{ width: '300px' }"
 					>
 						<HistoryChart

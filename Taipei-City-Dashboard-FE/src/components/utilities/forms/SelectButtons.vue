@@ -2,13 +2,12 @@
 
 <!-- Used by admin settings forms to select items from a predetermined list -->
 <script setup>
-import { ref, computed, toRef } from "vue";
+import { ref, computed } from "vue";
 import { chartTypes } from "../../../assets/configs/apexcharts/chartTypes";
 import { timeTerms } from "../../../assets/configs/AllTimes";
 
-const props = defineProps(["tags", "selected", "limit", "disable"]);
-
-const selectedTagList = toRef(props, "selected");
+const props = defineProps(["tags", "limit", "disable"]);
+const selected = defineModel("selected");
 
 const emit = defineEmits({
 	updatetagorder: { updatedTags: Array },
@@ -22,17 +21,16 @@ const selectLabels = computed(() => {
 });
 
 function handleClick(tag) {
-	if (selectedTagList.value.includes(tag)) {
-		selectedTagList.value = selectedTagList.value.filter(
+	if (selected.value.includes(tag)) {
+		selected.value = selected.value.filter(
 			(item) => item !== tag
 		);
 	} else {
-		if (props.limit && selectedTagList.value.length >= props.limit) {
+		if (props.limit && selected.value.length >= props.limit) {
 			return;
 		}
-		selectedTagList.value.push(tag);
+		selected.value.push(tag);
 	}
-	emit("updatetagorder", selectedTagList.value);
 }
 </script>
 
@@ -43,7 +41,7 @@ function handleClick(tag) {
       :key="`chart-${tag}`"
       :class="{
         'selectbuttons-button': true,
-        'selectbuttons-active': selectedTagList.includes(tag),
+        'selectbuttons-active': selected.includes(tag),
       }"
       :disabled="disable"
       @click="
