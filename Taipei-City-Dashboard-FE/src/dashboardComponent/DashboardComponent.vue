@@ -6,6 +6,7 @@ import "material-icons/iconfont/material-icons.css";
 import { getComponentDataTimeframe } from "./utilities/dataTimeframe";
 import { timeTerms } from "./utilities/AllTimes";
 import { chartTypes } from "./utilities/chartTypes";
+import { useAuthStore } from "../store/authStore";
 
 import ComponentTag from "./components/ComponentTag.vue";
 import TagTooltip from "./components/TagTooltip.vue";
@@ -77,6 +78,13 @@ const props = defineProps({
 	toggleOn: { type: Boolean, default: false },
 });
 
+const statusColors = {
+	approved: '#4CAF50',
+	submitted: '#2196F3',
+	rejected: '#F44336',
+	default: 'var(--color-complement-text)'
+};
+
 const emits = defineEmits([
 	"favorite",
 	"delete",
@@ -107,8 +115,10 @@ const toggleOn = computed({
 	},
 });
 
+const authStore = useAuthStore();
 const mousePosition = ref({ x: null, y: null });
 const showTagTooltip = ref(false);
+console.log(authStore.user, props.config);
 
 // Parses time data into display format
 const dataTime = computed(() => {
@@ -248,6 +258,32 @@ function returnChartComponent(name, svg) {
         <h3>
           {{ config.name }}
           <ComponentTag
+            icon=""
+            :text="config.status"
+            mode="small"
+            :color="statusColors[config.status] || statusColors.default"
+          />
+		  <ComponentTag
+			v-if="config.owner_id === authStore.user.user_id"
+            icon=""
+            text="我的"
+            mode="small"
+            color="#FFD700"
+          />
+        </h3>
+        <p v-if="mode === 'preview'">
+          {{ props.config.short_desc }}
+        </p>
+        <div v-if="!mode.includes('map') || toggleOn">
+          <h4 v-if="dataTime === '維護修復中'">
+            {{ `${config.source} | ` }}<span>warning</span>
+            <h4>{{ `${dataTime}` }}</h4>
+            <span>warning</span>
+          </h4>
+          <h4 v-else>
+            {{ `${config.source} | ${dataTime}` }}
+          </h4>
+		  <ComponentTag
             v-if="!mode.includes('map')"
             icon=""
             :text="updateFreq"
@@ -263,19 +299,6 @@ function returnChartComponent(name, svg) {
             <span v-if="config.map_config && config.map_config[0]">map</span>
             <span v-if="config.history_config?.range">insights</span>
           </div>
-        </h3>
-        <p v-if="mode === 'preview'">
-          {{ props.config.short_desc }}
-        </p>
-        <div v-if="!mode.includes('map') || toggleOn">
-          <h4 v-if="dataTime === '維護修復中'">
-            {{ `${config.source} | ` }}<span>warning</span>
-            <h4>{{ `${dataTime}` }}</h4>
-            <span>warning</span>
-          </h4>
-          <h4 v-else>
-            {{ `${config.source} | ${dataTime}` }}
-          </h4>
           <div
             v-if="mode !== 'preview'"
             class="city-tag-container"

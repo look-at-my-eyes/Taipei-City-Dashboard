@@ -263,13 +263,16 @@ func CreateComponentWithForm(c *gin.Context) {
 	for _, mapConfig := range data.MapConfig {
 		newMaps = append(newMaps, mapConfigToModelComponentMap(mapConfig))
 	}
-	tx2 = managerTx.Create(newMaps)
-	if tx2.Error != nil {
-		c.JSON(
-			http.StatusInternalServerError,
-			gin.H{"status": "error", "message": "failed to create component maps"},
-		)
-		return
+	
+	if len(newMaps) > 0 {
+		tx2 = managerTx.Create(newMaps)
+		if tx2.Error != nil {
+			c.JSON(
+				http.StatusInternalServerError,
+					gin.H{"status": "error", "message": "failed to create component maps"},
+				)
+				return
+			}
 	}
 
 	newComponentChart := models.ComponentChart{
@@ -339,6 +342,8 @@ func CreateComponentWithForm(c *gin.Context) {
 
 	tx.Commit()
 	managerTx.Commit()
+
+	c.JSON(http.StatusOK, gin.H{"status": "success", "data": newComponent})
 }
 
 func mapConfigToModelComponentMap(mapConfig *MapConfig) *models.ComponentMap {
