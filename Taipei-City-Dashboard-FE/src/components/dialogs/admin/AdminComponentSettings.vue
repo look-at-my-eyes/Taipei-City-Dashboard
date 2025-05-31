@@ -347,14 +347,8 @@ function handleClose() {
               :tags="
                 chartsPerDataType[currentComponent.query_type]
               "
-              :selected="currentComponent.chart_config.types"
+              v-model:selected="currentComponent.chart_config.types"
               :limit="3"
-              @updatetagorder="
-                (updatedTags) => {
-                  currentComponent.chart_config.types =
-                    updatedTags;
-                }
-              "
             />
             <label>圖表顏色</label>
             <InputTags

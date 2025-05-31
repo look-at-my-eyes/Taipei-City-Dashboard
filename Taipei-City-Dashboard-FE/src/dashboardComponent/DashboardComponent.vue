@@ -380,7 +380,6 @@ function returnChartComponent(name, svg) {
         </template>
       </select>
       <div
-        v-if="config.chart_config.types.length > 1"
         class="dashboardcomponent-control-group"
       >
         <button
@@ -723,8 +722,7 @@ button:hover {
 			display: flex;
 			justify-content: center;
 			align-items: center;
-			margin: 0 auto;
-			transform: translateX(-15%);
+			margin: 10px auto 0 auto;
 
 			&-button {
 				margin: 0 2px;
