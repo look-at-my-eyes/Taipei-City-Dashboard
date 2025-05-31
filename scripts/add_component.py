@@ -84,46 +84,51 @@ async def main():
         port=args.db_port,
     )
 
-    await conn.execute(
-        """
-		INSERT INTO "public"."component_charts" ("index", "color", "types", "unit")
-		VALUES ($1, $2, $3, $4);
-	""",
-        index,
-        colors,
-        types,
-        unit,
-    )
+    try:
+        async with conn.transaction():
+            await conn.execute(
+                """
+        		INSERT INTO "public"."component_charts" ("index", "color", "types", "unit")
+        		VALUES ($1, $2, $3, $4);
+        	""",
+                index,
+                colors,
+                types,
+                unit,
+            )
 
-    name = input("please input name: ")
-    query_type = input("please input query_type: ")
-    query_chart = input("please input query_chart: ")
-    city = input("please input city: ")
+            name = input("please input name: ")
+            query_type = input("please input query_type: ")
+            query_chart = input("please input query_chart: ")
+            city = input("please input city: ")
 
-    await conn.execute(
-        """
-		INSERT INTO "public"."components" ("index", "name")
-		VALUES ($1, $2);
-		""",
-        index,
-        name,
-    )
+            await conn.execute(
+                """
+        		INSERT INTO "public"."components" ("index", "name")
+        		VALUES ($1, $2);
+        		""",
+                index,
+                name,
+            )
 
-    await conn.execute(
-        """
-		INSERT INTO "public"."query_charts" ("index", "created_at", "updated_at", "query_type", "query_chart", "city", "time_from")
-		VALUES ($1, $2, $3, $4, $5, $6, $7);
-		""",
-        index,
-        datetime.now(),
-        datetime.now(),
-        query_type,
-        query_chart,
-        city,
-        "static",
-    )
-
-    await conn.close()
+            await conn.execute(
+                """
+        		INSERT INTO "public"."query_charts" ("index", "created_at", "updated_at", "query_type", "query_chart", "city", "time_from")
+        		VALUES ($1, $2, $3, $4, $5, $6, $7);
+        		""",
+                index,
+                datetime.now(),
+                datetime.now(),
+                query_type,
+                query_chart,
+                city,
+                "static",
+            )
+    except Exception as e:
+        print(f"An error occurred: {e}", file=sys.stderr)
+        # The transaction will be rolled back automatically by the `async with conn.transaction()` context manager
+    finally:
+        await conn.close()
 
 
 if __name__ == "__main__":
