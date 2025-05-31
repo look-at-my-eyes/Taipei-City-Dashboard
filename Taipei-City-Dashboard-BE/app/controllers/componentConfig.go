@@ -2,12 +2,21 @@
 package controllers
 
 import (
+	"encoding/csv"
+	"encoding/json"
+	"fmt"
+	"log"
 	"net/http"
+	"path/filepath"
 	"strconv"
+	"strings"
+	"time"
 
 	"TaipeiCityDashboardBE/app/models"
+	"TaipeiCityDashboardBE/internal"
 
 	"github.com/gin-gonic/gin"
+	"github.com/lib/pq"
 )
 
 /*
@@ -142,6 +151,153 @@ func GetComponentByIDAll(c *gin.Context) {
 
 	// Return the component
 	c.JSON(http.StatusOK, gin.H{"status": "success", "data": cityComponent})
+}
+
+type createComponentFormData struct {
+	Index          string      `json:"index"`
+	Name           string      `json:"name"`
+	ChartConfig    ChartConfig `json:"chart_config"`
+	QueryType      string      `json:"query_type"`
+	QueryChart     string      `json:"query_chart"`
+	Source         string      `json:"source"`
+	TimeFrom       string      `json:"time_from"`
+	TimeTo         string      `json:"time_to"`
+	UpdateFreq     int         `json:"update_freq"`
+	UpdateFreqUnit string      `json:"update_freq_unit"`
+	ShortDesc      string      `json:"short_desc"`
+	LongDesc       string      `json:"long_desc"`
+	UseCase        string      `json:"use_case"`
+	Links          []string    `json:"links"`
+	Contributors   []string    `json:"contributors"`
+	City           string      `json:"city"`
+}
+
+type ChartConfig struct {
+	Color []string `json:"color"`
+	Types []string `json:"types"`
+	Unit  string   `json:"unit"`
+}
+
+// CreateComponentWithForm creates a component in the database and updates component_charts, components, and query_charts tables.
+func CreateComponentWithForm(c *gin.Context) {
+	component := c.PostForm("component")
+	var data createComponentFormData
+	err := json.Unmarshal([]byte(component), &data)
+	if err != nil {
+		c.JSON(
+			http.StatusBadRequest,
+			gin.H{"status": "error", "message": fmt.Sprintf("Invalid JSON content: %s", err.Error())},
+		)
+		return
+	}
+
+	form, err := c.MultipartForm()
+	if err != nil {
+		c.JSON(
+			http.StatusBadRequest,
+			gin.H{"status": "error", "message": "Invalid form data"},
+		)
+		return
+	}
+
+	tx := models.DBDashboard.Begin()
+	defer tx.Rollback()
+
+	files := form.File["files"]
+	for _, fh := range files {
+		file, err := fh.Open()
+		if err != nil {
+			log.Printf("warning: failed to open file '%s': %v\n", fh.Filename, err)
+			continue
+		}
+
+		reader := csv.NewReader(file)
+		csvdata, err := reader.ReadAll()
+		if err != nil {
+			log.Printf("warning: failed to read CSV: %v\n", err)
+			continue
+		}
+
+		tableName := strings.TrimSuffix(filepath.Base(fh.Filename), filepath.Ext(fh.Filename))
+		err = internal.PGImport(tx, csvdata, tableName, "public")
+		if err != nil {
+			c.JSON(
+				http.StatusInternalServerError,
+				gin.H{"status": "error", "message": "failed to import file into database"},
+			)
+			return
+		}
+	}
+
+	tx2 := tx.Exec(data.QueryChart)
+	if tx2.Error != nil {
+		c.JSON(
+			http.StatusBadRequest,
+			gin.H{"status": "error", "message": "failed to execute query chart"},
+		)
+		return
+	}
+
+	// if checks passed, create records
+	newComponentChart := models.ComponentChart{
+		Index: data.Index,
+		Color: pq.StringArray(data.ChartConfig.Color),
+		Types: pq.StringArray(data.ChartConfig.Types),
+		Unit:  data.ChartConfig.Unit,
+	}
+
+	newComponent := models.Component{
+		Index: data.Index,
+		Name:  data.Name,
+	}
+
+	freq := int64(data.UpdateFreq)
+	newQueryChart := models.QueryCharts{
+		Index:          data.Index,
+		TimeFrom:       data.TimeFrom,
+		TimeTo:         &data.TimeTo,
+		UpdateFreq:     &freq,
+		UpdateFreqUnit: data.UpdateFreqUnit,
+		Source:         data.Source,
+		ShortDesc:      data.ShortDesc,
+		LongDesc:       data.LongDesc,
+		UseCase:        data.UseCase,
+		Links:          data.Links,
+		Contributors:   data.Contributors,
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
+		QueryType:      data.QueryType,
+		QueryChart:     data.QueryChart,
+		City:           data.City,
+	}
+	tx.Commit()
+
+	tx = models.DBManager.Create(&newComponentChart)
+	if tx.Error != nil {
+		c.JSON(
+			http.StatusInternalServerError,
+			gin.H{"status": "error", "message": "failed to create component chart"},
+		)
+		return
+	}
+
+	tx = models.DBManager.Create(&newComponent)
+	if tx.Error != nil {
+		c.JSON(
+			http.StatusInternalServerError,
+			gin.H{"status": "error", "message": "failed to create component"},
+		)
+		return
+	}
+
+	tx = models.DBManager.Create(&newQueryChart)
+	if tx.Error != nil {
+		c.JSON(
+			http.StatusInternalServerError,
+			gin.H{"status": "error", "message": "failed to create query chart"},
+		)
+		return
+	}
 }
 
 /*
