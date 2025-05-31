@@ -189,8 +189,8 @@ type MapConfig struct {
 	Type     string  `json:"type"`
 	Size     *string `json:"size"`
 	Icon     *string `json:"icon"`
-	Source   string  `json:"source"`
-	City     string  `json:"city"`
+	// Source   string  `json:"source"`
+	City string `json:"city"`
 }
 
 // CreateComponentWithForm creates a component in the database and updates component_charts, components, and query_charts tables.
@@ -263,16 +263,16 @@ func CreateComponentWithForm(c *gin.Context) {
 	for _, mapConfig := range data.MapConfig {
 		newMaps = append(newMaps, mapConfigToModelComponentMap(mapConfig))
 	}
-	
+
 	if len(newMaps) > 0 {
 		tx2 = managerTx.Create(newMaps)
 		if tx2.Error != nil {
 			c.JSON(
 				http.StatusInternalServerError,
-					gin.H{"status": "error", "message": "failed to create component maps"},
-				)
-				return
-			}
+				gin.H{"status": "error", "message": "failed to create component maps"},
+			)
+			return
+		}
 	}
 
 	newComponentChart := models.ComponentChart{
@@ -317,8 +317,8 @@ func CreateComponentWithForm(c *gin.Context) {
 		City:           data.City,
 	}
 	newComponent := models.Component{
-		Index: data.Index,
-		Name:  data.Name,
+		Index:   data.Index,
+		Name:    data.Name,
 		Status:  models.StatusSubmitted,
 		OwnerID: int64(accountID),
 	}
@@ -351,7 +351,7 @@ func mapConfigToModelComponentMap(mapConfig *MapConfig) *models.ComponentMap {
 		Index:    mapConfig.Index,
 		Title:    mapConfig.Title,
 		Type:     mapConfig.Type,
-		Source:   mapConfig.Source,
+		Source:   "geojson",
 		Size:     mapConfig.Size,
 		Icon:     mapConfig.Icon,
 		Paint:    strPtrToJsonRawMessagePtr(mapConfig.Paint),
