@@ -662,11 +662,12 @@ function deleteMapConfig(index) {
 				<div class="createcomponent-preview">
 					<CreateComponentInfo
 						:key="`${newComponent.index}-${newComponent.chart_config.color}-${newComponent.chart_config.types}`"
-						:config="JSON.parse(JSON.stringify(newComponent))"
+						:config="newComponent"
 						:active-city="newComponent.city"
 						:city-tag="contentStore.cityManager.getTagList(newComponent.city)"
 						:current-settings="currentSettings"
 						:generated-prompt="generatedPrompt"
+						@update:map_filter="newComponent.map_filter = $event"
 						mode="large"
 						@upload="handleUpload"
 					/>
