@@ -13,6 +13,7 @@ import { chartsPerDataType } from "../../assets/configs/apexcharts/chartTypes";
 import { timeTerms } from "../../assets/configs/AllTimes";
 import { mapTypes } from "../../assets/configs/mapbox/mapConfig";
 import http from "../../router/axios";
+import generateSQLPrompt from "../../utils/generateSQLPrompt";
 
 const dialogStore = useDialogStore();
 const contentStore = useContentStore();
@@ -71,6 +72,7 @@ watch(
 
 async function handleConfirm() {
 	try {
+		generateSQLPrompt(uploadedFiles.value, newComponent.value.query_type);
 		console.log(uploadedFiles.value);
 		const formData = new FormData();
 		formData.append('component', JSON.stringify(newComponent.value));
@@ -111,8 +113,6 @@ function handleClose() {
 			unit: "",
 			categories: null,
 		},
-		chart_data: null,
-		query_data: "",
 		map_config: [null],
 		map_filter: null,
 		history_config: {
