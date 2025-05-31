@@ -198,17 +198,14 @@ function handleClose() {
 							required
 						>
 						<div class="two-block">
-							<label>組件 ID</label>
+							<label>城市</label>
 							<label>組件 Index</label>
 						</div>
 						<div class="two-block">
-							<input
-								v-model="newComponent.id"
-								type="text"
-								:minlength="1"
-								:maxlength="30"
-								required
-							>
+							<select v-model="newComponent.city">
+								<option value="taipei">台北</option>
+								<option value="metrotaipei">雙北</option>
+							</select>
 							<input
 								v-model="newComponent.index"
 								type="text"
@@ -217,11 +214,6 @@ function handleClose() {
 								required
 							>
 						</div>
-						<label>城市*</label>
-						<select v-model="newComponent.city">
-							<option value="taipei">台北</option>
-							<option value="metrotaipei">雙北</option>
-						</select>
 						<label>資料來源*</label>
 						<input
 							v-model="newComponent.source"

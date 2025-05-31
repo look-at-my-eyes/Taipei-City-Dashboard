@@ -205,6 +205,7 @@ function handleUpload(event) {
         <div
           v-if="['default', 'half', 'preview'].includes(mode)"
           class="dashboardcomponent-header-button"
+		  style="margin-bottom: 15px;"
         >
           <button
             v-if="addBtn"
@@ -232,6 +233,7 @@ function handleUpload(event) {
         <div
           v-else-if="mode.includes('map')"
           class="dashboardcomponent-header-toggle"
+		  style="margin-bottom: 15px;"
         >
           <label class="toggleswitch">
             <input
@@ -244,7 +246,7 @@ function handleUpload(event) {
         </div>
       </div>
       <!-- Chart Type Buttons -->
-      <p>Chart Type: </p>
+      <p style="margin-bottom: 15px;">Chart Type: </p>
       <div v-if="(!mode.includes('map') || toggleOn) && mode !== 'preview' && config.chart_config.types.length >= 1" class="dashboardcomponent-control-group">
         <button
           v-for="item in config.chart_config.types"
@@ -276,7 +278,7 @@ function handleUpload(event) {
         </div>
 
         <!-- 顯示已上傳檔案名稱 -->
-        <ul v-if="uploadedFiles.length" class="uploaded-file-list">
+        <ul v-if="uploadedFiles.length" class="uploaded-file-list" style="margin-bottom: 15px;">
           <li v-for="file in uploadedFiles" :key="file.name" class="uploaded-file-item">
             <span style="margin-left:4px;">- {{ file.name }}</span>
           </li>
@@ -284,48 +286,6 @@ function handleUpload(event) {
       </div>
 
       <!-- Footer -->
-      <div
-        v-if="footer && (!mode.includes('map') || toggleOn)"
-        class="dashboardcomponent-footer"
-      >
-        <div
-          v-if="!mode.includes('map')"
-          @mouseenter="changeShowTagTooltipState(true)"
-          @mousemove="updateMouseLocation"
-          @mouseleave="changeShowTagTooltipState(false)"
-        >
-          <ComponentTag
-            v-if="config.map_filter && config.map_config?.length > 0"
-            :icon="mode === 'preview' ? '' : 'tune'"
-            text="篩選地圖"
-            class="hide-if-mobile"
-          />
-          <ComponentTag
-            v-if="config.map_config && config.map_config[0] !== null && config.map_config?.length > 0"
-            :icon="mode === 'preview' ? '' : 'map'"
-            text="空間資料"
-            class="hide-if-mobile"
-          />
-          <ComponentTag
-            v-if="config.history_config?.range"
-            :icon="mode === 'preview' ? '' : 'insights'"
-            text="歷史資料"
-            class="history-tag"
-          />
-        </div>
-        <div v-else />
-        <button
-          v-if="infoBtn"
-          @click="$emit('info', config)"
-        >
-          <p>{{ infoBtnText }}</p>
-          <span>arrow_circle_right</span>
-        </button>
-      </div>
-      <div
-        v-else-if="!mode.includes('map')"
-        class="dashboardcomponent-footer"
-      />
     </div>
   </div>
   <Teleport to="body">
@@ -812,7 +772,7 @@ button:hover {
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    gap: 10px;
+    gap: 15px;
   }
   .upload-icon {
     font-size: 1rem;
