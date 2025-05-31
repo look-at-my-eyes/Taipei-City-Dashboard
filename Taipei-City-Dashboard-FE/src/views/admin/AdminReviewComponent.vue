@@ -13,7 +13,7 @@ import AdminComponentSettings from "../../components/dialogs/admin/AdminComponen
 import { chartTypes } from "../../assets/configs/apexcharts/chartTypes";
 import { mapTypes } from "../../assets/configs/mapbox/mapConfig";
 import AdminComponentTemplate from "../../components/dialogs/admin/AdminComponentTemplate.vue";
-
+import AdminComponentReview from "../../components/dialogs/admin/AdminComponentReview.vue";
 const adminStore = useAdminStore();
 const dialogStore = useDialogStore();
 const contentStore = useContentStore();
@@ -96,10 +96,6 @@ function handleOpenReview(component) {
 	dialogStore.showDialog("adminComponentSettings");
 }
 
-// const showAdminAddComponent = () => {
-// 	dialogStore.showDialog("adminAddComponentTemplate");
-// };
-
 onMounted(() => {
 	adminStore.getPublicComponents(searchParams.value);
 });
@@ -154,7 +150,7 @@ onMounted(() => {
               searchParams.sort === 'id' ? searchParams.order : ''
             "
             min-width="40px"
-            @sort="handleSort('id')"
+            @sort="handleSort('id')"	
           >
             ID
           </TableHeader> -->
@@ -337,6 +333,7 @@ onMounted(() => {
     </div>
     <AdminComponentSettings :search-params="searchParams" />
     <AdminComponentTemplate />
+	<AdminComponentReview :search-params="searchParams" />
   </div>
 </template>
 
