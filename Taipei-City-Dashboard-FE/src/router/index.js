@@ -83,6 +83,11 @@ const routes = [
 		component: () => import("../views/admin/AdminEditComponent.vue"),
 	},
 	{
+		path: "/admin/review-component",
+		name: "admin-review-component",
+		component: () => import("../views/admin/AdminReviewComponent.vue"),
+	},
+	{
 		path: "/admin/issue",
 		name: "admin-issue",
 		component: () => import("../views/admin/AdminIssue.vue"),
