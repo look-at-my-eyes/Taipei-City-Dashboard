@@ -181,15 +181,15 @@ type ChartConfig struct {
 }
 
 type MapConfig struct {
-	Index    string         `json:"index"`
-	Paint    map[string]any `json:"paint"`
-	Property map[string]any `json:"property"`
-	Title    string         `json:"title"`
-	Type     string         `json:"type"`
-	Size     *string        `json:"size"`
-	Icon     *string        `json:"icon"`
-	Source   string         `json:"source"`
-	City     string         `json:"city"`
+	Index    string  `json:"index"`
+	Paint    *string `json:"paint"`
+	Property *string `json:"property"`
+	Title    string  `json:"title"`
+	Type     string  `json:"type"`
+	Size     *string `json:"size"`
+	Icon     *string `json:"icon"`
+	Source   string  `json:"source"`
+	City     string  `json:"city"`
 }
 
 // CreateComponentWithForm creates a component in the database and updates component_charts, components, and query_charts tables.
@@ -352,16 +352,6 @@ func CreateComponentWithForm(c *gin.Context) {
 }
 
 func mapConfigToModelComponentMap(mapConfig *MapConfig) (*models.ComponentMap, error) {
-	paint, err := json.Marshal(mapConfig.Paint)
-	if err != nil {
-		return nil, err
-	}
-
-	property, err := json.Marshal(mapConfig.Property)
-	if err != nil {
-		return nil, err
-	}
-
 	newMap := models.ComponentMap{
 		Index:    mapConfig.Index,
 		Title:    mapConfig.Title,
@@ -369,10 +359,19 @@ func mapConfigToModelComponentMap(mapConfig *MapConfig) (*models.ComponentMap, e
 		Source:   mapConfig.Source,
 		Size:     mapConfig.Size,
 		Icon:     mapConfig.Icon,
-		Paint:    (*json.RawMessage)(&paint),
-		Property: (*json.RawMessage)(&property),
+		Paint:    strPtrToJsonRawMessagePtr(mapConfig.Paint),
+		Property: strPtrToJsonRawMessagePtr(mapConfig.Property),
 	}
 	return &newMap, nil
+}
+
+func strPtrToJsonRawMessagePtr(strPtr *string) *json.RawMessage {
+	if strPtr == nil {
+		return nil
+	}
+	str := *strPtr
+	rawMsg := json.RawMessage(str)
+	return &rawMsg
 }
 
 /*
