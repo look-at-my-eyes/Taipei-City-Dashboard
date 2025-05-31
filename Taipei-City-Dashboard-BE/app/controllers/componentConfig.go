@@ -284,7 +284,7 @@ func CreateComponentWithForm(c *gin.Context) {
 		return
 	}
 
-	mapConfigIDs := make([]int64, len(newMaps))
+	mapConfigIDs := []int64{}
 	for _, componentMap := range newMaps {
 		mapConfigIDs = append(mapConfigIDs, componentMap.ID)
 	}
