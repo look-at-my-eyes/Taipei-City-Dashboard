@@ -40,7 +40,7 @@ func PGImport(db *gorm.DB, data [][]string, tableName, schemaName string) error 
 	}
 
 	inferredTypes := inferColumnTypes(header, sampleRows)
-	log.Printf("inferred types: %v\n", inferredTypes)
+	log.Printf("debug: inferred types: %v\n", inferredTypes)
 
 	// Build and execute CREATE TABLE
 	columnDefs := []string{`"id" SERIAL PRIMARY KEY`}
@@ -53,7 +53,7 @@ func PGImport(db *gorm.DB, data [][]string, tableName, schemaName string) error 
 	if err := db.Exec(createStmt).Error; err != nil {
 		return fmt.Errorf("failed to create table: %w", err)
 	}
-	log.Printf("table '%s' created", tableName)
+	log.Printf("debug: table '%s' created", tableName)
 
 	// Insert rows
 	for _, record := range data[1:] {
@@ -77,7 +77,7 @@ func PGImport(db *gorm.DB, data [][]string, tableName, schemaName string) error 
 			return fmt.Errorf("failed to insert row: %w", err)
 		}
 	}
-	log.Printf("%d rows inserted to database", len(data)-1)
+	log.Printf("debug: %d rows inserted to database", len(data)-1)
 
 	return nil
 }
