@@ -12,8 +12,17 @@ const props = defineProps(["searchParams"]);
 
 const { currentComponent } = storeToRefs(adminStore);
 
-function handleConfirm() {
-	// TODO: Add your confirm logic here
+async function handleApproved() {
+	currentComponent.value.status = "approved";
+	await adminStore.updateComponent(props.searchParams);
+	await adminStore.getSubmittedComponents(props.searchParams);
+	handleClose();
+}
+
+async function handleRejected() {
+	currentComponent.value.status = "rejected";
+	await adminStore.updateComponent(props.searchParams);
+	await adminStore.getSubmittedComponents(props.searchParams);
 	handleClose();
 }
 
@@ -31,10 +40,10 @@ function handleClose() {
 			<div class="admincomponentreview-header">
 				<h2>審查組件</h2>
 				<div class="admincomponentreview-buttons">
-					<button class="confirm-button" @click="handleConfirm">
+					<button class="confirm-button" @click="handleApproved">
 						<span class="material-icons">check</span>
 					</button>
-					<button class="cancel-button" @click="handleClose" style="background-color: #ff0000;">
+					<button class="cancel-button" @click="handleRejected" style="background-color: #ff0000;">
 						<span class="material-icons">close</span>
 					</button>
 				</div>

@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"TaipeiCityDashboardBE/app/models"
+	"TaipeiCityDashboardBE/app/util"
 	"TaipeiCityDashboardBE/internal"
 
 	"github.com/gin-gonic/gin"
@@ -194,6 +195,8 @@ type MapConfig struct {
 
 // CreateComponentWithForm creates a component in the database and updates component_charts, components, and query_charts tables.
 func CreateComponentWithForm(c *gin.Context) {
+	_, accountID, _, _, _ := util.GetUserInfoFromContext(c)
+
 	component := c.PostForm("component")
 	var data createComponentFormData
 	err := json.Unmarshal([]byte(component), &data)
@@ -313,6 +316,8 @@ func CreateComponentWithForm(c *gin.Context) {
 	newComponent := models.Component{
 		Index: data.Index,
 		Name:  data.Name,
+		Status:  models.StatusSubmitted,
+		OwnerID: int64(accountID),
 	}
 	tx2 = managerTx.Create(&newComponent)
 	if tx2.Error != nil {
@@ -399,7 +404,7 @@ func UpdateComponent(c *gin.Context) {
 	}
 
 	// 4. Update the component
-	cityComponent, err = models.UpdateComponent(id, query.City, cityComponent.Name, cityComponent.HistoryConfig, cityComponent.MapFilter, cityComponent.TimeFrom, cityComponent.TimeTo, cityComponent.UpdateFreq, cityComponent.UpdateFreqUnit, cityComponent.Source, cityComponent.ShortDesc, cityComponent.LongDesc, cityComponent.UseCase, cityComponent.Links, cityComponent.Contributors)
+	cityComponent, err = models.UpdateComponent(id, query.City, cityComponent.Name, cityComponent.HistoryConfig, cityComponent.MapFilter, cityComponent.TimeFrom, cityComponent.TimeTo, cityComponent.UpdateFreq, cityComponent.UpdateFreqUnit, cityComponent.Source, cityComponent.ShortDesc, cityComponent.LongDesc, cityComponent.UseCase, cityComponent.Links, cityComponent.Contributors, cityComponent.Status)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": err.Error()})
 		return
@@ -534,4 +539,58 @@ func DeleteComponent(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"status": "success", "chart_deleted": deleteChartStatus, "map_deleted": deleteMapStatus})
+}
+
+/*
+GetMyComponents retrieves all components created by the current user.
+GET /api/v1/component/my
+*/
+func GetMyComponents(c *gin.Context) {
+	loginType, accountID, _, _, _ := util.GetUserInfoFromContext(c)
+	if loginType == "no login" {
+		c.JSON(http.StatusUnauthorized, gin.H{"status": "error", "message": "unauthorized"})
+		return
+	}
+
+	var query componentQuery
+	c.ShouldBindQuery(&query)
+
+	// Get the components
+	components, totalComponents, resultNum, err := models.GetMyComponents(int64(accountID), query.City, query.PageSize, query.PageNum, query.Sort, query.Order, query.FilterBy, query.FilterMode, query.FilterValue, query.SearchByIndex, query.SearchByName)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": "failed to get my components"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "success", "data": components, "total": totalComponents, "results": resultNum})
+}
+
+/*
+GetComponentsByStatus retrieves components by their status (submitted, approved, rejected).
+GET /api/v1/component/status/:status
+*/
+func GetComponentsByStatus(c *gin.Context) {
+	loginType, _, isAdmin, _, _ := util.GetUserInfoFromContext(c)
+	if loginType == "no login" || !isAdmin {
+		c.JSON(http.StatusUnauthorized, gin.H{"status": "error", "message": "unauthorized"})
+		return
+	}
+
+	status := c.Param("status")
+	if status != models.StatusSubmitted && status != models.StatusApproved && status != models.StatusRejected {
+		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "message": "Invalid status. Must be one of: submitted, approved, rejected"})
+		return
+	}
+
+	var query componentQuery
+	c.ShouldBindQuery(&query)
+
+	// Get the components
+	components, totalComponents, resultNum, err := models.GetComponentsByStatus(status, query.City, query.PageSize, query.PageNum, query.Sort, query.Order, query.FilterBy, query.FilterMode, query.FilterValue, query.SearchByIndex, query.SearchByName)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": "failed to get components by status"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "success", "data": components, "total": totalComponents, "results": resultNum})
 }

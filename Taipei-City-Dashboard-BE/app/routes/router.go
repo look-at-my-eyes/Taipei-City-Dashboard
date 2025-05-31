@@ -83,15 +83,21 @@ func configureComponentRoutes() {
 		componentRoutes.GET("/:id/chart", controllers.GetComponentChartData)
 		componentRoutes.GET("/:id/history", controllers.GetComponentHistoryData)
 	}
+	componentRoutes.Use(middleware.IsLoggedIn())
+	{
+		componentRoutes.POST("/", controllers.CreateComponentWithForm)
+		componentRoutes.GET("/my", controllers.GetMyComponents)
+	}
 	componentRoutes.Use(middleware.IsSysAdm())
 	{
 		componentRoutes.
-			POST("/", controllers.CreateComponentWithForm).
 			PATCH("/:id", controllers.UpdateComponent).
 			DELETE("/:id", controllers.DeleteComponent)
 		componentRoutes.
 			PATCH("/:id/chart", controllers.UpdateComponentChartConfig)
 		componentRoutes.PATCH("/:id/map", controllers.UpdateComponentMapConfig)
+
+		componentRoutes.GET("/status/:status", controllers.GetComponentsByStatus)
 	}
 }
 
