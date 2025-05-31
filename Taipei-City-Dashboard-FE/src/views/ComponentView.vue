@@ -11,11 +11,14 @@ Testing: Jack Huang (Data Scientist), Ian Huang (Data Analysis Intern)
 <script setup>
 import { ref, onMounted } from "vue";
 import DashboardComponent from "../dashboardComponent/DashboardComponent.vue";
+import CreateComponent from "../components/dialogs/CreateComponent.vue";
 
 import { useContentStore } from "../store/contentStore";
+import { useDialogStore } from "../store/dialogStore";
 import router from "../router/index";
 
 const contentStore = useContentStore();
+const dialogStore = useDialogStore();
 
 const searchParams = ref({
 	searchbyindex: "",
@@ -64,6 +67,9 @@ onMounted(() => {
     </div>
     <button @click="handleNewQuery">
       搜尋
+    </button>
+	<button @click="dialogStore.showDialog('createComponent')">
+      新增組件
     </button>
   </div>
   <!-- 1. If the components are loaded -->
@@ -139,6 +145,7 @@ onMounted(() => {
       <p>請重新搜尋或更改篩選條件</p>
     </div>
   </div>
+  <CreateComponent />
 </template>
 
 <style scoped lang="scss">
