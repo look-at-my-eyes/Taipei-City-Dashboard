@@ -260,14 +260,9 @@ func CreateComponentWithForm(c *gin.Context) {
 
 	newMaps := []*models.ComponentMap{}
 	for _, mapConfig := range data.MapConfig {
-		modelMap, err := mapConfigToModelComponentMap(mapConfig)
-		if err != nil {
-			log.Printf("warning: failed to convert map config to component map: %v", err)
-			continue
-		}
-		newMaps = append(newMaps, modelMap)
+		newMaps = append(newMaps, mapConfigToModelComponentMap(mapConfig))
 	}
-	tx = managerTx.Create(&newMaps)
+	tx = managerTx.Create(newMaps)
 	if tx.Error != nil {
 		c.JSON(
 			http.StatusInternalServerError,
@@ -351,8 +346,8 @@ func CreateComponentWithForm(c *gin.Context) {
 	managerTx.Commit()
 }
 
-func mapConfigToModelComponentMap(mapConfig *MapConfig) (*models.ComponentMap, error) {
-	newMap := models.ComponentMap{
+func mapConfigToModelComponentMap(mapConfig *MapConfig) *models.ComponentMap {
+	return &models.ComponentMap{
 		Index:    mapConfig.Index,
 		Title:    mapConfig.Title,
 		Type:     mapConfig.Type,
@@ -362,7 +357,6 @@ func mapConfigToModelComponentMap(mapConfig *MapConfig) (*models.ComponentMap, e
 		Paint:    strPtrToJsonRawMessagePtr(mapConfig.Paint),
 		Property: strPtrToJsonRawMessagePtr(mapConfig.Property),
 	}
-	return &newMap, nil
 }
 
 func strPtrToJsonRawMessagePtr(strPtr *string) *json.RawMessage {
