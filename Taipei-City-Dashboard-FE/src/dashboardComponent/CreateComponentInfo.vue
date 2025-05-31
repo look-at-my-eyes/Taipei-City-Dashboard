@@ -245,8 +245,10 @@ function handleUpload(event) {
           </label>
         </div>
       </div>
+
+	  <hr style="border: 1px dashed var(--color-border); margin: 10px 0;" v-if="config.chart_config.types.length > 0">
       <!-- Chart Type Buttons -->
-      <p style="margin-bottom: 15px;">Chart Type: </p>
+      <p style="margin-bottom: 15px;" v-if="config.chart_config.types.length > 0">Chart Type: </p>
       <div v-if="(!mode.includes('map') || toggleOn) && mode !== 'preview' && config.chart_config.types.length >= 1" class="dashboardcomponent-control-group">
         <button
           v-for="item in config.chart_config.types"
@@ -260,6 +262,13 @@ function handleUpload(event) {
           {{ chartTypes[item] }}
         </button>
       </div>
+
+	  <hr style="border: 1px dashed var(--color-border); margin: 10px 0;">
+
+	  <div v-if="config.map_config.length > 0">
+		<label style="margin-bottom: 20px; font-size: 0.8rem;">地圖篩選</label>
+		<textarea style="width: 100%; height: 80px; padding: 10px; border-radius: 5px; border: 1px solid var(--color-border); font-size: 0.8rem; margin-top: 10px;" v-model="config.map_filter" />
+	  </div>
       
       <!-- upload components -->
       <div class="dashboardcomponent-upload-container">
@@ -336,6 +345,7 @@ button:hover {
 	border-radius: 5px;
 	background-color: var(--color-component-background);
 	gap: 20px;
+	overflow-y: auto;
 
 	@media (min-width: 1050px) {
 		height: 370px;
