@@ -5,7 +5,6 @@ import { storeToRefs } from "pinia";
 import { useAdminStore } from "../../../store/adminStore";
 import { useDialogStore } from "../../../store/dialogStore";
 import DialogContainer from "../DialogContainer.vue";
-import { onMounted } from "vue";
 
 const dialogStore = useDialogStore();
 const adminStore = useAdminStore();
@@ -21,10 +20,6 @@ function handleConfirm() {
 function handleClose() {
 	dialogStore.hideAllDialogs();
 }
-
-onMounted(() => {
-	console.log("test", currentComponent.value);
-});
 </script>
 
 <template>
