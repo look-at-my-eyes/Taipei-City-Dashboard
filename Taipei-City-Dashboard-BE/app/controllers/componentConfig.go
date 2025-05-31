@@ -270,12 +270,34 @@ func CreateComponentWithForm(c *gin.Context) {
 		QueryChart:     data.QueryChart,
 		City:           data.City,
 	}
-
-	tx.Create(&newComponentChart)
-	tx.Create(&newComponent)
-	tx.Create(&newQueryChart)
-
 	tx.Commit()
+
+	tx = models.DBManager.Create(&newComponentChart)
+	if tx.Error != nil {
+		c.JSON(
+			http.StatusInternalServerError,
+			gin.H{"status": "error", "message": "failed to create component chart"},
+		)
+		return
+	}
+
+	tx = models.DBManager.Create(&newComponent)
+	if tx.Error != nil {
+		c.JSON(
+			http.StatusInternalServerError,
+			gin.H{"status": "error", "message": "failed to create component"},
+		)
+		return
+	}
+
+	tx = models.DBManager.Create(&newQueryChart)
+	if tx.Error != nil {
+		c.JSON(
+			http.StatusInternalServerError,
+			gin.H{"status": "error", "message": "failed to create query chart"},
+		)
+		return
+	}
 }
 
 /*
