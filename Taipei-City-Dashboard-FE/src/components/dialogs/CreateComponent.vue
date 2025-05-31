@@ -80,11 +80,13 @@ async function handleConfirm() {
 			});
 		}
 		console.log(formData);
-		await http.post(`/component/`, formData, {
+		const res = await http.post(`/component/`, formData, {
 			headers: {
 				'Content-Type': 'multipart/form-data',
 			},
 		});
+
+		await contentStore.favoriteComponent(res.data.data.id);
 		dialogStore.showNotification("success", "組件新增成功");
 		handleClose();
 	} catch (error) {

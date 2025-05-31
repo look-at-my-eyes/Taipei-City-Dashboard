@@ -10,6 +10,10 @@ defineProps({
 		type: String,
 		default: "outline",
 	},
+	color: {
+		type: String,
+		default: "var(--color-complement-text)",
+	},
 });
 </script>
 
@@ -20,9 +24,13 @@ defineProps({
       'componenttag-fill': mode === 'fill',
       'componenttag-small': mode === 'small',
     }"
+    :style="{
+      borderColor: mode === 'fill' ? color : color,
+      backgroundColor: mode === 'fill' ? color : 'transparent',
+    }"
   >
-    <span v-if="icon">{{ icon }}</span>
-    <p>{{ text }}</p>
+    <span v-if="icon" :style="{ color: mode === 'fill' ? 'white' : color }">{{ icon }}</span>
+    <p :style="{ color: mode === 'fill' ? 'white' : color }">{{ text }}</p>
   </div>
 </template>
 
@@ -36,26 +44,22 @@ defineProps({
 	align-items: center;
 	margin-right: 4px;
 	padding: 0 4px;
-	border: solid 1px var(--color-complement-text);
+	border: solid 1px;
 	border-radius: 5px;
 	overflow-x: hidden;
 	user-select: none;
 
 	span {
 		margin-right: 4px;
-		color: var(--color-complement-text);
 		font-family: var(--font-icon);
 	}
 
 	p {
 		max-height: var(--font-ms);
-		color: var(--color-complement-text);
 		font-size: var(--font-s);
 	}
 
 	&-fill {
-		background-color: var(--color-complement-text);
-
 		span,
 		p {
 			color: white;

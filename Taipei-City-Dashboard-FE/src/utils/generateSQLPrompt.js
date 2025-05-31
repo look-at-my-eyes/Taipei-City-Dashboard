@@ -46,8 +46,6 @@ async function generateSQLPrompt(files, queryType) {
 		.replace('{{QUERY_TYPE}}', `${queryType}`)
 		.replace('{{QUERY_TYPE_EXAMPLE}}', `${example}`);
 
-	console.log(prompt);
-
 	return prompt;
 }
 

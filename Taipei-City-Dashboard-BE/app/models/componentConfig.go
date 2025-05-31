@@ -77,6 +77,7 @@ type CityComponent struct {
 	QueryHistory   string          `json:"-"`
 	City           string          `json:"city"`
 	Status         string          `json:"status"`
+	OwnerID        int64           `json:"owner_id"`
 }
 
 // ComponentMap is the model for the component_maps table.
