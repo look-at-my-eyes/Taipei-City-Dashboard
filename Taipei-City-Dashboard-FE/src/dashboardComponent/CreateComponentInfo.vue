@@ -143,6 +143,12 @@ function handleUpload(event) {
       },
     ]"
     :style="style"
+	v-show="
+		currentSettings === 'all' ||
+		currentSettings === 'chart' || 
+		currentSettings === 'prompt' ||
+		currentSettings === 'map'
+	"
   >
     <div v-if="currentSettings === 'prompt'">
       <div v-if="generatedPrompt">
@@ -489,7 +495,6 @@ button:hover {
 			justify-content: center;
 			align-items: center;
 			margin: 0 auto;
-			transform: translateX(-15%);
 			padding: 0 !important;
 
 			&-button {
@@ -497,7 +502,7 @@ button:hover {
 				padding: 4px 4px;
 				border-radius: 5px;
 				background-color: rgb(77, 77, 77);
-				opacity: 0.6;
+				opacity: 1;
 				color: var(--color-complement-text);
 				font-size: var(--font-s);
 				text-align: center;
@@ -511,7 +516,6 @@ button:hover {
 			}
 	
 			&-active {
-				background-color: var(--color-complement-text);
 				color: white;
 			}
 		}
@@ -681,14 +685,6 @@ button:hover {
 	&-loading {
 		height: 60%;
 	}
-}
-
-.dashboardcomponent-control {
-	display: flex;
-}
-
-.dashboardcomponent-control-group {
-	margin: 0;
 }
 
 .halfmapopen {
