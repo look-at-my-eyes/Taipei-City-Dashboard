@@ -207,14 +207,14 @@ func CreateComponentWithForm(c *gin.Context) {
 	for _, fh := range files {
 		file, err := fh.Open()
 		if err != nil {
-			log.Printf("failed to open file '%s': %v\n", fh.Filename, err)
+			log.Printf("warning: failed to open file '%s': %v\n", fh.Filename, err)
 			continue
 		}
 
 		reader := csv.NewReader(file)
 		csvdata, err := reader.ReadAll()
 		if err != nil {
-			log.Printf("failed to read CSV: %v\n", err)
+			log.Printf("warning: failed to read CSV: %v\n", err)
 			continue
 		}
 
