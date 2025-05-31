@@ -154,24 +154,24 @@ func GetComponentByIDAll(c *gin.Context) {
 }
 
 type createComponentFormData struct {
-	Index          string         `json:"index"`
-	Name           string         `json:"name"`
-	ChartConfig    ChartConfig    `json:"chart_config"`
-	QueryType      string         `json:"query_type"`
-	QueryChart     string         `json:"query_chart"`
-	MapConfig      []*MapConfig   `json:"map_config"`
-	MapFilter      map[string]any `json:"map_filter"`
-	Source         string         `json:"source"`
-	TimeFrom       string         `json:"time_from"`
-	TimeTo         string         `json:"time_to"`
-	UpdateFreq     int            `json:"update_freq"`
-	UpdateFreqUnit string         `json:"update_freq_unit"`
-	ShortDesc      string         `json:"short_desc"`
-	LongDesc       string         `json:"long_desc"`
-	UseCase        string         `json:"use_case"`
-	Links          []string       `json:"links"`
-	Contributors   []string       `json:"contributors"`
-	City           string         `json:"city"`
+	Index          string       `json:"index"`
+	Name           string       `json:"name"`
+	ChartConfig    ChartConfig  `json:"chart_config"`
+	QueryType      string       `json:"query_type"`
+	QueryChart     string       `json:"query_chart"`
+	MapConfig      []*MapConfig `json:"map_config"`
+	MapFilter      string       `json:"map_filter"`
+	Source         string       `json:"source"`
+	TimeFrom       string       `json:"time_from"`
+	TimeTo         string       `json:"time_to"`
+	UpdateFreq     int          `json:"update_freq"`
+	UpdateFreqUnit string       `json:"update_freq_unit"`
+	ShortDesc      string       `json:"short_desc"`
+	LongDesc       string       `json:"long_desc"`
+	UseCase        string       `json:"use_case"`
+	Links          []string     `json:"links"`
+	Contributors   []string     `json:"contributors"`
+	City           string       `json:"city"`
 }
 
 type ChartConfig struct {
@@ -252,8 +252,6 @@ func CreateComponentWithForm(c *gin.Context) {
 		return
 	}
 
-	tx.Commit()
-
 	// if checks passed, create records
 	managerTx := models.DBManager.Begin()
 	defer managerTx.Rollback()
@@ -262,8 +260,8 @@ func CreateComponentWithForm(c *gin.Context) {
 	for _, mapConfig := range data.MapConfig {
 		newMaps = append(newMaps, mapConfigToModelComponentMap(mapConfig))
 	}
-	tx = managerTx.Create(newMaps)
-	if tx.Error != nil {
+	tx2 = managerTx.Create(newMaps)
+	if tx2.Error != nil {
 		c.JSON(
 			http.StatusInternalServerError,
 			gin.H{"status": "error", "message": "failed to create component maps"},
@@ -277,8 +275,8 @@ func CreateComponentWithForm(c *gin.Context) {
 		Types: pq.StringArray(data.ChartConfig.Types),
 		Unit:  data.ChartConfig.Unit,
 	}
-	tx = managerTx.Create(&newComponentChart)
-	if tx.Error != nil {
+	tx2 = managerTx.Create(&newComponentChart)
+	if tx2.Error != nil {
 		c.JSON(
 			http.StatusInternalServerError,
 			gin.H{"status": "error", "message": "failed to create component chart"},
@@ -291,15 +289,6 @@ func CreateComponentWithForm(c *gin.Context) {
 		mapConfigIDs = append(mapConfigIDs, componentMap.ID)
 	}
 
-	mapFilter, err := json.Marshal(data.MapFilter)
-	if err != nil {
-		c.JSON(
-			http.StatusInternalServerError,
-			gin.H{"status": "error", "message": "failed to create component"},
-		)
-		return
-	}
-
 	freq := int64(data.UpdateFreq)
 	newQueryChart := models.QueryCharts{
 		Index:          data.Index,
@@ -308,7 +297,7 @@ func CreateComponentWithForm(c *gin.Context) {
 		UpdateFreq:     &freq,
 		UpdateFreqUnit: data.UpdateFreqUnit,
 		MapConfigIDs:   mapConfigIDs,
-		MapFilter:      mapFilter,
+		MapFilter:      []byte(data.MapFilter),
 		Source:         data.Source,
 		ShortDesc:      data.ShortDesc,
 		LongDesc:       data.LongDesc,
@@ -325,8 +314,8 @@ func CreateComponentWithForm(c *gin.Context) {
 		Index: data.Index,
 		Name:  data.Name,
 	}
-	tx = managerTx.Create(&newComponent)
-	if tx.Error != nil {
+	tx2 = managerTx.Create(&newComponent)
+	if tx2.Error != nil {
 		c.JSON(
 			http.StatusInternalServerError,
 			gin.H{"status": "error", "message": "failed to create component"},
@@ -334,8 +323,8 @@ func CreateComponentWithForm(c *gin.Context) {
 		return
 	}
 
-	tx = managerTx.Create(&newQueryChart)
-	if tx.Error != nil {
+	tx2 = managerTx.Create(&newQueryChart)
+	if tx2.Error != nil {
 		c.JSON(
 			http.StatusInternalServerError,
 			gin.H{"status": "error", "message": "failed to create query chart"},
@@ -343,6 +332,7 @@ func CreateComponentWithForm(c *gin.Context) {
 		return
 	}
 
+	tx.Commit()
 	managerTx.Commit()
 }
 
