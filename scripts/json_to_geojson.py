@@ -10,7 +10,7 @@ import argparse
 import pandas as pd
 
 REPO_ROOT = Path(__file__).parents[1]
-
+encoding = 'utf-8'
 
 print(f"{REPO_ROOT=}")
 
@@ -34,11 +34,11 @@ def main():
 
     try:
         if file_extension == ".json":
-            with input_file_path.open(encoding="utf-8") as f:
+            with input_file_path.open(encoding=encoding) as f:
                 data = json.load(f)
             df = pd.DataFrame(data)
         elif file_extension == ".csv":
-            df = pd.read_csv(input_file_path, encoding="utf-8")
+            df = pd.read_csv(input_file_path, encoding=encoding)
         else:
             print(
                 f"Error: Unsupported file type: {file_extension}. Please provide a .json or .csv file."
