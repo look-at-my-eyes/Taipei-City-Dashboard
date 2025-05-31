@@ -129,6 +129,8 @@ func GetAllComponents(city string, pageSize int, pageNum int, sort string, order
 	// Count the total amount of components
 	tempDB.Count(&totalComponents)
 
+	tempDB = tempDB.Where("components.status = ?", StatusApproved)
+
 	if city != "" {
 		tempDB = tempDB.Where("query_charts.city = ?", city)
 	}
