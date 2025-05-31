@@ -122,6 +122,8 @@ function handleClose() {
 		contributors: [],
 		city: "taipei",
 		query_chart: "",
+		map_filter: "",
+		map_config: [],
 	});
 }
 
@@ -131,10 +133,10 @@ function addMapConfig() {
 		index: "",
 		title: "",
 		type: "",
-		size: "",
-		icon: "",
-		paint: "",
-		property: "",
+		size: null,
+		icon: null,
+		paint: null,
+		property: null,
 	});
 }
 
