@@ -25,7 +25,7 @@ const params = ref({
 	time_to: null,
 	update_freq: null,
 	update_freq_unit: "minute",
-	source: "",
+	source: "geojson",
 	short_desc: "",
 	long_desc: "",
 	use_case: "",

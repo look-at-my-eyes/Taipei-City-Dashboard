@@ -19,7 +19,7 @@ const props = defineProps({
 				value
 			),
 	},
-	config: { type: Object, required: true },
+	config: { type: Object, default: () => ({}) },
 	selectBtn: { type: Boolean, default: false },
 	selectBtnDisabled: { type: Boolean, default: false },
 	selectBtnList: { type: Array, default: () => ([])  },
@@ -51,6 +51,7 @@ const emits = defineEmits([
 	"fly",
 	"changeCity",
 	"upload",
+	"update:map_filter",
 ]);
 
 const toggleOn = computed({
@@ -273,7 +274,7 @@ function handleUpload(event) {
 
 	  <div v-if="config.map_config.length > 0">
 		<label style="margin-bottom: 20px; font-size: 0.8rem;">地圖篩選</label>
-		<textarea style="width: 100%; height: 80px; padding: 10px; border-radius: 5px; border: 1px solid var(--color-border); font-size: 0.8rem; margin-top: 10px;" v-model="config.map_filter" />
+		<textarea style="width: 100%; height: 80px; padding: 10px; border-radius: 5px; border: 1px solid var(--color-border); font-size: 0.8rem; margin-top: 10px;" :value="config.map_filter" @input="$emit('update:map_filter', $event.target.value)" />
 	  </div>
       
       <!-- upload components -->
